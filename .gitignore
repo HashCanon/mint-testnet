@@ -24,3 +24,6 @@ dist-ssr
 *.sln              
 *.sw?           
 .cache/
+.env
+.env.*
+!.env.example
