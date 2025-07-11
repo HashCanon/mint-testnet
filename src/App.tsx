@@ -1,59 +1,66 @@
 // src/App.tsx
-import { useEffect, useState }           from 'react'
+
+import { useEffect, useState } from 'react'
 import { useAccount, useChainId, useChains } from 'wagmi'
-import { toast, Toaster }                from 'sonner'
+import { toast, Toaster } from 'sonner'
 
 import {
-  sendMintTx as mintNFT,                // alias
+  sendMintTx as mintNFT,
   getMintingStatus,
   getTotalMinted,
   getTokenURI,
 } from './logic'
-import { CONTRACTS }                     from './constants'
-import { wagmiConfig }                   from './wagmi'
-import { getPublicClient }               from 'wagmi/actions'
+import { CONTRACTS } from './constants'
+import { wagmiConfig } from './wagmi'
+import { getPublicClient } from 'wagmi/actions'
+
 import './App.css'
 
-/* helpers ---------------------------------------------------------------- */
+/* ────────────────────────────────────────────────────────────────── */
+/*  Constants & Chain Helpers                                        */
+/* ────────────────────────────────────────────────────────────────── */
 
 const getAddress = (id?: number) => (id && CONTRACTS[id]) || undefined
 
-const MINT_START_TIME  = new Date('2025-07-07T13:12:00Z')
-const TOTAL_SUPPLY_CAP = 8_192
+const MINT_START_TIME = new Date('2025-07-07T13:12:00Z')
+const TOTAL_SUPPLY_CAP = 8192
 
-/* component -------------------------------------------------------------- */
+/* ────────────────────────────────────────────────────────────────── */
+/*  Component                                                        */
+/* ────────────────────────────────────────────────────────────────── */
+
 export default function App() {
-  /* wallet -------------------------------------------------------------- */
+  // Wallet & Network Info
   const { address, isConnected } = useAccount()
-  const chainId                  = useChainId()
-  const chains                   = useChains()
-  const chain                    = chains.find(c => c.id === chainId)
-  const networkOk                = !!getAddress(chainId)
+  const chainId = useChainId()
+  const chains = useChains()
+  const chain = chains.find(c => c.id === chainId)
+  const networkOk = !!getAddress(chainId)
 
-  /* UI-state ------------------------------------------------------------ */
-  const [now, setNow]                       = useState(new Date())
+  // UI State
+  const [now, setNow] = useState(new Date())
   const [mintingEnabled, setMintingEnabled] = useState<boolean | null>(null)
-  const [totalMinted,    setTotalMinted]    = useState<number | null>(null)
-  const [mintedTokens,   setMintedTokens]   = useState<any[]>([])
-  const [waitToast,      setWaitToast]      = useState<string | number | null>(null)
+  const [totalMinted, setTotalMinted] = useState<number | null>(null)
+  const [mintedTokens, setMintedTokens] = useState<any[]>([])
+  const [waitToast, setWaitToast] = useState<string | number | null>(null)
 
-  /* local clock (1 s) --------------------------------------------------- */
+  // Local clock: tick every second
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1_000)
+    const id = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(id)
   }, [])
 
-  /* initial totalSupply ------------------------------------------------- */
+  // Initial fetch for totalSupply
   useEffect(() => {
     getTotalMinted().then(setTotalMinted).catch(() => setTotalMinted(null))
   }, [])
 
-  /* mintingEnabled polling (1 s, last 60 s) ---------------------------- */
+  // Poll mintingEnabled once per second for last minute before start
   useEffect(() => {
     let first = true
     const id = setInterval(async () => {
       const ms = MINT_START_TIME.getTime() - Date.now()
-      if (first || ms <= 60_000) {
+      if (first || ms <= 60000) {
         first = false
         try {
           const enabled = await getMintingStatus()
@@ -64,11 +71,11 @@ export default function App() {
           clearInterval(id)
         }
       }
-    }, 1_000)
+    }, 1000)
     return () => clearInterval(id)
   }, [])
 
-  /* «Waiting for network…» toast -------------------------------------- */
+  // Show waiting toast before mint opens
   useEffect(() => {
     const afterStart = now >= MINT_START_TIME
     if (afterStart && mintingEnabled === false && !waitToast) {
@@ -81,42 +88,42 @@ export default function App() {
     }
   }, [now, mintingEnabled, waitToast])
 
-  /* fmt helper --------------------------------------------------------- */
+  // Countdown formatter
   const fmt = (ms: number) => {
-    const s  = Math.max(0, Math.floor(ms / 1_000))
-    const h  = Math.floor((s % 86_400) / 3_600)
-    const m  = Math.floor((s % 3_600)  /   60)
+    const s = Math.max(0, Math.floor(ms / 1000))
+    const h = Math.floor((s % 86400) / 3600)
+    const m = Math.floor((s % 3600) / 60)
     const ss = s % 60
-    return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${ss.toString().padStart(2,'0')}`
+    return `${h.toString().padStart(2, '0')}:${m
+      .toString()
+      .padStart(2, '0')}:${ss.toString().padStart(2, '0')}`
   }
 
-  /* mint click --------------------------------------------------------- */
+  // Mint button handler
   const handleMint = async () => {
-    if (!isConnected)                return toast.error('❌ Connect wallet first')
-    if (!networkOk)                  return toast.error('❌ Wrong network')
-    if (mintingEnabled !== true)     return toast.error('❌ Mint not active')
+    if (!isConnected) return toast.error('❌ Connect wallet first')
+    if (!networkOk) return toast.error('❌ Wrong network')
+    if (mintingEnabled !== true) return toast.error('❌ Mint not active')
     if (totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP)
       return toast.error('❌ Sold-out')
 
-    /* 1 — подпись */
     const confirmId = toast.info('🦊 Confirm the transaction in your wallet…', {
       duration: Infinity,
     })
 
     let progressId: string | number | null = null
     try {
-      /* hash получаем сразу после подписи */
       const { hash, chainId: txChain } = await mintNFT()
       toast.dismiss(confirmId)
 
-      /* 2 — майнинг */
       progressId = toast.info('⏳ Minting…', { duration: Infinity })
+
       const client = getPublicClient(wagmiConfig, { chainId: txChain })
-      await client.waitForTransactionReceipt({ hash })       // mined-receipt
+      await client.waitForTransactionReceipt({ hash })
+
       toast.dismiss(progressId)
       toast.success('✅ Mint successful!')
 
-      /* 3 — обновляем UI */
       const updated = await getTotalMinted()
       setTotalMinted(updated)
 
@@ -128,9 +135,11 @@ export default function App() {
       toast.error(`❌ ${err.shortMessage ?? err.message}`)
     }
   }
-  /* -------------------------------------------------------------------- */
-  /* render                                                              */
-  /* -------------------------------------------------------------------- */
+
+  /* ────────────────────────────────────────────────────────────────── */
+  /*  Render                                                           */
+  /* ────────────────────────────────────────────────────────────────── */
+
   return (
     <>
       <div id="title">
@@ -142,8 +151,7 @@ export default function App() {
         <div className="status">
           <p>Mint starts at {MINT_START_TIME.toUTCString().slice(5, 22)} UTC</p>
           <p>
-            Available in{' '}
-            <strong>{fmt(MINT_START_TIME.getTime() - now.getTime())}</strong>
+            Available in <strong>{fmt(MINT_START_TIME.getTime() - now.getTime())}</strong>
           </p>
         </div>
       )}
@@ -154,7 +162,8 @@ export default function App() {
 
         {isConnected && address ? (
           <p className="status">
-            Wallet: {address.slice(0, 6)}…{address.slice(-4)} ({networkOk ? `${chain?.name} ✅` : 'Wrong network ❌'})
+            Wallet: {address.slice(0, 6)}…{address.slice(-4)} (
+            {networkOk ? `${chain?.name} ✅` : 'Wrong network ❌'})
           </p>
         ) : (
           <p className="status">Please connect wallet ↑</p>

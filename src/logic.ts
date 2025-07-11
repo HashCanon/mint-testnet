@@ -1,60 +1,80 @@
-//-------------------------------------------------------------------
-//  Chain-agnostic helpers + read / write for HashJing NFT contract
-//-------------------------------------------------------------------
+// src/logic.ts
+// ------------------------------------------------------------------
+// Chain-agnostic helpers + reads / writes for HashJing NFT contract
+// ------------------------------------------------------------------
 
-import { wagmiConfig }            from './wagmi'
+import { wagmiConfig }             from './wagmi'
 import { CONTRACTS, CONTRACT_ABI } from './constants'
 import {
   getWalletClient,
   getPublicClient,
   writeContract,
 } from 'wagmi/actions'
-import type { PublicClient }       from 'viem'
-import { ethers }                  from 'ethers'
+import type { PublicClient } from 'viem'
 
-/* ─ helpers ───────────────────────────────────────────────────────── */
+// ------------------------------------------------------------------
+// Narrow chain-id to the only two networks we support.
+type SupportedChain = 1 | 11155111                         // 1 = mainnet, 11155111 = Sepolia
+const SEP: SupportedChain = 11155111
 
-const SEP = 11155111                                   // Sepolia id
+/** Current chain-id: prefer wallet → fallback to Sepolia. */
+const currentChainId = async (): Promise<SupportedChain> =>
+  (await getWalletClient(wagmiConfig).catch(() => undefined))?.chain.id as SupportedChain ?? SEP
 
-/** current chain-id: prefer wallet → fallback Sepolia */
-const currentChainId = async () =>
-  (await getWalletClient(wagmiConfig).catch(() => undefined))?.chain.id ?? SEP
-
-/** read via *wallet provider* (when connected) */
-const read = async <
-  P extends { abi: any; functionName: string; args?: any[] }
->(params: P) => {
+/** Generic read helper (wallet provider, if connected). */
+const read = async <R = unknown>(
+  fn : string,
+  args: readonly unknown[] = [],
+): Promise<R> => {
   const chainId = await currentChainId()
   const client: PublicClient = getPublicClient(wagmiConfig, { chainId })
-  return client.readContract({ chainId, address: CONTRACTS[chainId], ...params })
+  return client.readContract({
+    address:   CONTRACTS[chainId],
+    abi:       CONTRACT_ABI,
+    functionName: fn,
+    args,
+  }) as unknown as R
 }
 
-/** read via *public RPC* (before wallet connect) */
-const readPublic = async <
-  P extends { abi: any; functionName: string; args?: any[] }
->(params: P) => {
+/** Public-RPC read helper (works before wallet connect). */
+const readPublic = async <R = unknown>(
+  fn : string,
+  args: readonly unknown[] = [],
+): Promise<R> => {
   const client = getPublicClient(wagmiConfig, { chainId: SEP })
-  return client.readContract({ chainId: SEP, address: CONTRACTS[SEP], ...params })
+  return client.readContract({
+    address:   CONTRACTS[SEP],
+    abi:       CONTRACT_ABI,
+    functionName: fn,
+    args,
+  }) as unknown as R
 }
 
-/* ─ reads ─────────────────────────────────────────────────────────── */
+// ------------------------------------------------------------------
+// Reads
+// ------------------------------------------------------------------
 
-export const getMintingStatus = async () => {
-  try   { return await readPublic({ abi: CONTRACT_ABI, functionName: 'mintingEnabled' }) }
-  catch { console.warn('mintingEnabled() failed → TRUE'); return true }
+export const getMintingStatus = async (): Promise<boolean> => {
+  try   { return await readPublic<boolean>('mintingEnabled') }
+  catch  {
+    console.warn('mintingEnabled() failed – fallback to TRUE')
+    return true
+  }
 }
 
-export const getTotalMinted = async () => {
-  const total: bigint = await readPublic({ abi: CONTRACT_ABI, functionName: 'totalSupply' })
+export const getTotalMinted = async (): Promise<number> => {
+  const total = await readPublic<bigint>('totalSupply')
   return Number(total)
 }
 
 export const getTokenURI = async (id: number) => {
-  const uri: string = await read({ abi: CONTRACT_ABI, functionName: 'tokenURI', args: [id] })
+  const uri = await read<string>('tokenURI', [id])
   return JSON.parse(atob(uri.split(',')[1]))
 }
 
-/* ─ write (only send tx — mined-receipt ждём в App) ───────────────── */
+// ------------------------------------------------------------------
+// Write (mint)
+// ------------------------------------------------------------------
 
 export const sendMintTx = async () => {
   const wc = await getWalletClient(wagmiConfig)
@@ -62,26 +82,13 @@ export const sendMintTx = async () => {
 
   const hash = await writeContract(wagmiConfig, {
     account:   wc.account,
-    chainId:   wc.chain.id,
-    address:   CONTRACTS[wc.chain.id],
+    chainId:   wc.chain.id as SupportedChain,
+    address:   CONTRACTS[wc.chain.id as SupportedChain],
     abi:       CONTRACT_ABI,
     functionName: 'mint',
-    args:      [],                              // обязателен
+    args:      [],                              // empty array is mandatory
     value:     BigInt(2_000_000_000_000_000),   // 0.002 ETH
   })
 
-  /* возвращаем только hash + chain — mined-receipt ждём в App */
-  return { hash, chainId: wc.chain.id }
-}
-
-/* (опц.) ethers helper */
-export const getContract = async (withSigner = false) => {
-  if (!window.ethereum) throw new Error('No wallet found')
-
-  const provider = new ethers.BrowserProvider(window.ethereum)
-  const network  = await provider.getNetwork()
-  const address  = CONTRACTS[Number(network.chainId)] ?? CONTRACTS[SEP]
-  const signer   = withSigner ? await provider.getSigner() : undefined
-
-  return new ethers.Contract(address, CONTRACT_ABI, signer || provider)
+  return { hash, chainId: wc.chain.id as SupportedChain }
 }

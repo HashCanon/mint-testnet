@@ -1,7 +1,7 @@
 // src/main.tsx
-//-------------------------------------------------------------------
-//  Root entry for HashJing Mint UI
-//-------------------------------------------------------------------
+// ------------------------------------------------------------------
+// Root entry for HashJing Mint UI
+// ------------------------------------------------------------------
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
@@ -20,14 +20,14 @@ import { wagmiConfig, CHAINS } from './wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 const queryClient = new QueryClient()
 
-/* ------------------------------------------------------------------ */
+// ------------------------------------------------------------------
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <WagmiConfig config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        {/* Sepolia = CHAINS[0] (see wagmi.ts) */}
-        <RainbowKitProvider chains={CHAINS} initialChain={CHAINS[0]}>
+        {/* Sepolia = CHAINS[0] */}
+        <RainbowKitProvider initialChain={CHAINS[0]}>
           <ConnectButton />
           <App />
         </RainbowKitProvider>

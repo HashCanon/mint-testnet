@@ -1,32 +1,44 @@
+// src/wagmi.ts
 // ------------------------------------------------------------------
-//  wagmi / RainbowKit shared config
+// wagmi / RainbowKit shared configuration
 // ------------------------------------------------------------------
 
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
-import { http }             from 'wagmi'
+import { http } from 'wagmi'
 import { sepolia, mainnet } from 'wagmi/chains'
 
-/* тестнеты включены, если VITE_ENABLE_TESTNETS !== 'false' */
-const ENABLE_TESTNETS =
-  import.meta.env.VITE_ENABLE_TESTNETS !== 'false'
+/**
+ * Determines whether testnets should be enabled.
+ * Controlled by VITE_ENABLE_TESTNETS (default: true).
+ */
+const ENABLE_TESTNETS = import.meta.env.VITE_ENABLE_TESTNETS !== 'false'
 
+/**
+ * List of enabled chains. Sepolia is first to make it the default.
+ */
 export const CHAINS = ENABLE_TESTNETS
-  ? ([sepolia, mainnet] as const)      // Sepolia первой
+  ? ([sepolia, mainnet] as const)
   : ([mainnet] as const)
 
-/* WalletConnect project id ("" ⇒ QR off) */
+/**
+ * WalletConnect project ID (empty string disables QR modal).
+ */
 const projectId = import.meta.env.VITE_WC_PROJECT_ID ?? ''
 
-/* кастомные RPC из .env или fallback-public */
+/**
+ * Custom RPC URLs from .env (fallback to public endpoints).
+ */
 const SEPOLIA_RPC =
-  import.meta.env.VITE_SEPOLIA_RPC        // ← ваш Infura / Alchemy key
-  ?? 'https://ethereum-sepolia.publicnode.com'   // public, без ключа
+  import.meta.env.VITE_SEPOLIA_RPC ??
+  'https://ethereum-sepolia.publicnode.com'
 
 const MAINNET_RPC =
-  import.meta.env.VITE_MAINNET_RPC
-  ?? 'https://rpc.ankr.com/eth'
+  import.meta.env.VITE_MAINNET_RPC ??
+  'https://rpc.ankr.com/eth'
 
-/* экспортируем wagmiConfig */
+/**
+ * Export wagmiConfig for use in <WagmiConfig />
+ */
 export const wagmiConfig = getDefaultConfig({
   appName: 'HashJing',
   projectId,
