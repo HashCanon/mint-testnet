@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAccount, useChainId, useChains } from 'wagmi'
 import { toast, Toaster } from 'sonner'
 
@@ -42,6 +42,10 @@ export default function App() {
   const [totalMinted, setTotalMinted] = useState<number | null>(null)
   const [mintedTokens, setMintedTokens] = useState<any[]>([])
   const [waitToast, setWaitToast] = useState<string | number | null>(null)
+
+  // Toast + tx refs for visibility change recovery
+  const confirmToastRef = useRef<string | number | null>(null)
+  const hashSeenRef = useRef(false)
 
   // Local clock: tick every second
   useEffect(() => {
@@ -106,14 +110,15 @@ export default function App() {
     if (mintingEnabled !== true)  return toast.error('❌ Mint not active')
     if (totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP)
       return toast.error('❌ Sold-out')
-  
+
     setBusy(true)
-  
+
     // Step 1 — ask user to sign transaction
     const confirmId = toast.info('🦊 Confirm the transaction in MetaMask…', {
       duration: Infinity,
     })
-  
+    confirmToastRef.current = confirmId
+
     // Show reminder only if user actually left the tab (mobile MetaMask)
     let reminderId: number | string | null = null
     const reminderTimer = document.hidden
@@ -123,25 +128,26 @@ export default function App() {
           })
         }, 15_000)
       : undefined
-  
+
     let progressId: number | string | null = null
-  
+
     try {
       // Step 2 — wait for signature and get tx hash
       const { hash, chainId: txChain } = await mintNFT()
-  
+      hashSeenRef.current = true
+
       if (reminderTimer) clearTimeout(reminderTimer)
       toast.dismiss(confirmId)
       if (reminderId) toast.dismiss(reminderId)
-  
+
       // Step 3 — wait for mining
       progressId = toast.info('⏳ Minting…', { duration: Infinity })
       const client = getPublicClient(wagmiConfig, { chainId: txChain })
       await client.waitForTransactionReceipt({ hash })
-  
+
       toast.dismiss(progressId)
       toast.success('✅ Mint successful!')
-  
+
       // Step 4 — refresh UI
       const updated = await getTotalMinted()
       setTotalMinted(updated)
@@ -152,18 +158,35 @@ export default function App() {
       toast.dismiss(confirmId)
       if (progressId) toast.dismiss(progressId)
       if (reminderId) toast.dismiss(reminderId)
-  
-      // Optional: detect MetaMask rejection more precisely via err.name
+
       toast.error(`❌ ${err?.shortMessage ?? err?.message ?? 'Transaction failed'}`)
     } finally {
       setBusy(false)
+      confirmToastRef.current = null
+      hashSeenRef.current = false
     }
-  }  
+  }
+
+  // Visibility recovery: clear "Confirm..." if user stayed in MetaMask too long
+  useEffect(() => {
+    const onVis = () => {
+      if (!document.hidden &&
+          busy &&
+          !hashSeenRef.current &&
+          confirmToastRef.current !== null) {
+        toast.dismiss(confirmToastRef.current)
+        confirmToastRef.current = null
+        setBusy(false)
+      }
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [busy])
 
   return (
     <>
       <div id="title">
-        <div>HashJing Mint 3</div>
+        <div>HashJing Mint 4</div>
         <div className="net-label">{chain?.name ?? 'No network'}</div>
       </div>
 
