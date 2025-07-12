@@ -11,7 +11,8 @@ lerna-debug.log*
 node_modules       
 dist             
 dist-ssr          
-*.local            
+*.local         
+index_.html   
 
 # Editor stuff
 .vscode/*        
