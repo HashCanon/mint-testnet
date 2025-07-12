@@ -31,6 +31,7 @@ const TOTAL_SUPPLY_CAP = 8192
 
 export default function App() {
   // Wallet & Network Info
+  const [busy, setBusy] = useState(false)   // NEW: guard against double-clicks
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
   const chains = useChains()
@@ -101,38 +102,56 @@ export default function App() {
 
   // Mint button handler
   const handleMint = async () => {
-    if (!isConnected) return toast.error('❌ Connect wallet first')
-    if (!networkOk) return toast.error('❌ Wrong network')
-    if (mintingEnabled !== true) return toast.error('❌ Mint not active')
+    if (busy)                     return    // already minting
+    if (!isConnected)             return toast.error('❌ Connect wallet first')
+    if (!networkOk)               return toast.error('❌ Wrong network')
+    if (mintingEnabled !== true)  return toast.error('❌ Mint not active')
     if (totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP)
       return toast.error('❌ Sold-out')
-
-    const confirmId = toast.info('🦊 Confirm the transaction in your wallet…', {
-      duration: Infinity,
-    })
-
-    let progressId: string | number | null = null
+  
+    setBusy(true)                 // ⬅︎ lock the UI
+    const confirmId  = toast.info('🦊 Confirm the transaction in MetaMask…',
+                                  { duration: Infinity })
+    let reminderId: number | string | null = null
+    let progressId: number | string | null = null
+  
+    // show a reminder if the tab stays in the background too long
+    const reminderTimer = setTimeout(() => {
+      reminderId = toast.info('↩︎ Return to the browser after signing.',
+                              { duration: Infinity })
+    }, 15_000)
+  
     try {
+      /* 1 — signature (hash when the user signs) */
       const { hash, chainId: txChain } = await mintNFT()
+  
+      clearTimeout(reminderTimer)
       toast.dismiss(confirmId)
-
+      if (reminderId) toast.dismiss(reminderId)
+  
+      /* 2 — mining */
       progressId = toast.info('⏳ Minting…', { duration: Infinity })
-
       const client = getPublicClient(wagmiConfig, { chainId: txChain })
       await client.waitForTransactionReceipt({ hash })
-
+  
       toast.dismiss(progressId)
       toast.success('✅ Mint successful!')
-
+  
+      /* 3 — UI refresh */
       const updated = await getTotalMinted()
       setTotalMinted(updated)
-
-      const meta = await getTokenURI(updated)
+      const meta    = await getTokenURI(updated)
       setMintedTokens(prev => [meta, ...prev])
     } catch (err: any) {
+      // clear any visible toasts
+      clearTimeout(reminderTimer)
       toast.dismiss(confirmId)
       if (progressId) toast.dismiss(progressId)
-      toast.error(`❌ ${err.shortMessage ?? err.message}`)
+      if (reminderId) toast.dismiss(reminderId)
+  
+      toast.error(`❌ ${err?.shortMessage ?? err?.message ?? 'Transaction failed'}`)
+    } finally {
+      setBusy(false)              // ⬅︎ unlock the UI
     }
   }
 
@@ -143,7 +162,7 @@ export default function App() {
   return (
     <>
       <div id="title">
-        <div>HashJing Mint</div>
+        <div>HashJing Mint 2</div>
         <div className="net-label">{chain?.name ?? 'No network'}</div>
       </div>
 
@@ -171,16 +190,14 @@ export default function App() {
 
         <button
           className={`wide-button green-button ${
-            !isConnected ||
-            !networkOk ||
+            busy || !isConnected || !networkOk ||
             mintingEnabled !== true ||
             (totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP)
               ? 'disabled'
               : ''
           }`}
           disabled={
-            !isConnected ||
-            !networkOk ||
+            busy || !isConnected || !networkOk ||
             mintingEnabled !== true ||
             (totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP)
           }
