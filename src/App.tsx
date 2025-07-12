@@ -1,5 +1,3 @@
-// src/App.tsx
-
 import { useEffect, useState } from 'react'
 import { useAccount, useChainId, useChains } from 'wagmi'
 import { toast, Toaster } from 'sonner'
@@ -31,7 +29,7 @@ const TOTAL_SUPPLY_CAP = 8192
 
 export default function App() {
   // Wallet & Network Info
-  const [busy, setBusy] = useState(false)   // NEW: guard against double-clicks
+  const [busy, setBusy] = useState(false)
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
   const chains = useChains()
@@ -102,34 +100,41 @@ export default function App() {
 
   // Mint button handler
   const handleMint = async () => {
-    if (busy)                     return    // already minting
+    if (busy)                     return
     if (!isConnected)             return toast.error('❌ Connect wallet first')
     if (!networkOk)               return toast.error('❌ Wrong network')
     if (mintingEnabled !== true)  return toast.error('❌ Mint not active')
     if (totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP)
       return toast.error('❌ Sold-out')
   
-    setBusy(true)                 // ⬅︎ lock the UI
-    const confirmId  = toast.info('🦊 Confirm the transaction in MetaMask…',
-                                  { duration: Infinity })
+    setBusy(true)
+  
+    // Step 1 — ask user to sign transaction
+    const confirmId = toast.info('🦊 Confirm the transaction in MetaMask…', {
+      duration: Infinity,
+    })
+  
+    // Show reminder only if user actually left the tab (mobile MetaMask)
     let reminderId: number | string | null = null
+    const reminderTimer = document.hidden
+      ? setTimeout(() => {
+          reminderId = toast.info('↩︎ Return to the browser after signing.', {
+            duration: Infinity,
+          })
+        }, 15_000)
+      : undefined
+  
     let progressId: number | string | null = null
   
-    // show a reminder if the tab stays in the background too long
-    const reminderTimer = setTimeout(() => {
-      reminderId = toast.info('↩︎ Return to the browser after signing.',
-                              { duration: Infinity })
-    }, 15_000)
-  
     try {
-      /* 1 — signature (hash when the user signs) */
+      // Step 2 — wait for signature and get tx hash
       const { hash, chainId: txChain } = await mintNFT()
   
-      clearTimeout(reminderTimer)
+      if (reminderTimer) clearTimeout(reminderTimer)
       toast.dismiss(confirmId)
       if (reminderId) toast.dismiss(reminderId)
   
-      /* 2 — mining */
+      // Step 3 — wait for mining
       progressId = toast.info('⏳ Minting…', { duration: Infinity })
       const client = getPublicClient(wagmiConfig, { chainId: txChain })
       await client.waitForTransactionReceipt({ hash })
@@ -137,32 +142,28 @@ export default function App() {
       toast.dismiss(progressId)
       toast.success('✅ Mint successful!')
   
-      /* 3 — UI refresh */
+      // Step 4 — refresh UI
       const updated = await getTotalMinted()
       setTotalMinted(updated)
-      const meta    = await getTokenURI(updated)
+      const meta = await getTokenURI(updated)
       setMintedTokens(prev => [meta, ...prev])
     } catch (err: any) {
-      // clear any visible toasts
-      clearTimeout(reminderTimer)
+      if (reminderTimer) clearTimeout(reminderTimer)
       toast.dismiss(confirmId)
       if (progressId) toast.dismiss(progressId)
       if (reminderId) toast.dismiss(reminderId)
   
+      // Optional: detect MetaMask rejection more precisely via err.name
       toast.error(`❌ ${err?.shortMessage ?? err?.message ?? 'Transaction failed'}`)
     } finally {
-      setBusy(false)              // ⬅︎ unlock the UI
+      setBusy(false)
     }
-  }
-
-  /* ────────────────────────────────────────────────────────────────── */
-  /*  Render                                                           */
-  /* ────────────────────────────────────────────────────────────────── */
+  }  
 
   return (
     <>
       <div id="title">
-        <div>HashJing Mint 2</div>
+        <div>HashJing Mint 3</div>
         <div className="net-label">{chain?.name ?? 'No network'}</div>
       </div>
 
