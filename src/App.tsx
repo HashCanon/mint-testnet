@@ -8,7 +8,7 @@ import {
   getTotalMinted,
   getTokenURI,
 } from './logic'
-import { CONTRACTS } from './constants'
+import { CONTRACTS, MINT_START_TIME, TOTAL_SUPPLY_CAP } from './constants'
 import { wagmiConfig } from './wagmi'
 import { getPublicClient } from 'wagmi/actions'
 
@@ -19,9 +19,6 @@ import './App.css'
 /* ────────────────────────────────────────────────────────────────── */
 
 const getAddress = (id?: number) => (id && CONTRACTS[id]) || undefined
-
-const MINT_START_TIME = new Date('2025-07-07T13:12:00Z')
-const TOTAL_SUPPLY_CAP = 8192
 
 /* ────────────────────────────────────────────────────────────────── */
 /*  Component                                                        */
@@ -105,16 +102,16 @@ export default function App() {
   // Mint button handler
   const handleMint = async () => {
     if (busy)                     return
-    if (!isConnected)             return toast.error('❌ Connect wallet first')
-    if (!networkOk)               return toast.error('❌ Wrong network')
-    if (mintingEnabled !== true)  return toast.error('❌ Mint not active')
+    if (!isConnected)             return toast.error('Connect wallet first')
+    if (!networkOk)               return toast.error('Wrong network')
+    if (mintingEnabled !== true)  return toast.error('Mint not active')
     if (totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP)
-      return toast.error('❌ Sold-out')
+      return toast.error('Sold-out')
 
     setBusy(true)
 
     // Step 1 — ask user to sign transaction
-    const confirmId = toast.info('🦊 Confirm the transaction in MetaMask…', {
+    const confirmId = toast.info('Waiting for wallet confirmation…', {
       duration: Infinity,
     })
     confirmToastRef.current = confirmId
@@ -141,12 +138,12 @@ export default function App() {
       if (reminderId) toast.dismiss(reminderId)
 
       // Step 3 — wait for mining
-      progressId = toast.info('⏳ Minting…', { duration: Infinity })
+      progressId = toast.info('Minting…', { duration: Infinity })
       const client = getPublicClient(wagmiConfig, { chainId: txChain })
       await client.waitForTransactionReceipt({ hash })
 
       toast.dismiss(progressId)
-      toast.success('✅ Mint successful!')
+      toast.success('Mint successful!')
 
       // Step 4 — refresh UI
       const updated = await getTotalMinted()
@@ -159,7 +156,7 @@ export default function App() {
       if (progressId) toast.dismiss(progressId)
       if (reminderId) toast.dismiss(reminderId)
 
-      toast.error(`❌ ${err?.shortMessage ?? err?.message ?? 'Transaction failed'}`)
+      toast.error(`${err?.shortMessage ?? err?.message ?? 'Transaction failed'}`)
     } finally {
       setBusy(false)
       confirmToastRef.current = null
