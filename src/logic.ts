@@ -55,6 +55,20 @@ const readPublic = async <R = unknown>(
 // ------------------------------------------------------------------
 
 export const getMintingStatus = async (): Promise<boolean> => {
+  // Log **every** call so it is visible in the browser console / terminal
+  console.log('[logic] mintingEnabled() → requesting status')
+
+  try {
+  const enabled = await readPublic<boolean>('mintingEnabled')
+  console.log(`[logic] mintingEnabled() → ${enabled}`)
+  return enabled
+  } catch (err) {
+  console.warn(
+    `[logic] mintingEnabled() failed (${(err as Error).message}); falling back to TRUE`,
+    )
+  return true
+  }
+
   try   { return await readPublic<boolean>('mintingEnabled') }
   catch  {
     console.warn('mintingEnabled() failed – fallback to TRUE')

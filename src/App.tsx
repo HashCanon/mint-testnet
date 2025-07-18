@@ -183,7 +183,7 @@ export default function App() {
   return (
     <>
       <div id="title">
-        <div>HashJing Mint 4</div>
+        <div>HashJing Mint 5</div>
         <div className="net-label">{chain?.name ?? 'No network'}</div>
       </div>
 

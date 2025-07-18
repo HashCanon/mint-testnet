@@ -6,7 +6,7 @@ import { mainnet, sepolia } from 'wagmi/chains'
 export const CONTRACTS: Record<number, `0x${string}`> = {
   [mainnet.id]: '0x0000000000000000000000000000000000000000', // TODO: set mainnet address
   //[sepolia.id]: '0x82e502d37013A96D1c862E164a64843EeE45DE5D', // 2025-07-06
-  [sepolia.id]: '0x28a7470D98432D8b0E8fB5a9Bf003a06296Fd80e' // 2025-07-13 svg-optimisation
+  [sepolia.id]: '0x2f969b692179fC10618070e5eB20041fe5da6896' // 2025-07-14 svg-optimisation
 } as const
 
 // historical Sepolia addresses (kept for reference)
