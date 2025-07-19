@@ -6,7 +6,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
-import './App.css'
 
 /* RainbowKit / wagmi */
 import '@rainbow-me/rainbowkit/styles.css'

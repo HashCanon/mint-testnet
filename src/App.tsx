@@ -12,8 +12,6 @@ import { CONTRACTS, MINT_START_TIME, TOTAL_SUPPLY_CAP } from './constants'
 import { wagmiConfig } from './wagmi'
 import { getPublicClient } from 'wagmi/actions'
 
-import './App.css'
-
 /* ────────────────────────────────────────────────────────────────── */
 /*  Constants & Chain Helpers                                        */
 /* ────────────────────────────────────────────────────────────────── */
@@ -183,7 +181,7 @@ export default function App() {
   return (
     <>
       <div id="title">
-        <div>HashJing Mint 7</div>
+        <div>HashJing Mint 8</div>
         <div className="net-label">{chain?.name ?? 'No network'}</div>
       </div>
 
