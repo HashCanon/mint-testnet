@@ -8,5 +8,5 @@ export default defineConfig({
     outDir: 'docs',   // ⇒ vite build → ./docs
     emptyOutDir: true
   },
-  base: '/hashjing-mint-testnet-vite/'
+  base: '/hashjing-mint-testnet/'
 })
