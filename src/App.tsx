@@ -12,12 +12,6 @@ import { CONTRACTS, MINT_START_TIME, TOTAL_SUPPLY_CAP } from './constants'
 import { wagmiConfig } from './wagmi'
 import { getPublicClient } from 'wagmi/actions'
 
-declare global {
-  interface Window {
-    dataLayer: any[];
-  }
-}
-
 /* ────────────────────────────────────────────────────────────────── */
 /*  Constants & Chain Helpers                                        */
 /* ────────────────────────────────────────────────────────────────── */
@@ -47,16 +41,6 @@ export default function App() {
   // Toast + tx refs for visibility change recovery
   const confirmToastRef = useRef<string | number | null>(null)
   const hashSeenRef = useRef(false)
-
-  // Google Analytics setup
-  useEffect(() => {
-    window.dataLayer = window.dataLayer || [];
-    function gtag(...args: any[]) {
-      window.dataLayer.push(args);
-    }
-    gtag('js', new Date());
-    gtag('config', 'G-LBT8NYF4P7');
-  }, [])
 
   // Local clock: tick every second
   useEffect(() => {
