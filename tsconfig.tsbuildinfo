@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/constants.ts","./src/logic.ts","./src/main.tsx","./src/vite-env.d.ts","./src/wagmi.ts"],"version":"5.8.3"}
+{"root":["./src/app.tsx","./src/constants.ts","./src/logic.ts","./src/main.tsx","./src/vite-env.d.ts","./src/wagmi.ts","./src/components/contactblock.tsx"],"version":"5.8.3"}
