@@ -12,6 +12,8 @@ import { CONTRACTS, MINT_START_TIME, TOTAL_SUPPLY_CAP } from './constants'
 import { wagmiConfig } from './wagmi'
 import { getPublicClient } from 'wagmi/actions'
 
+import { ContactBlock } from './components/ContactBlock'
+
 /* ────────────────────────────────────────────────────────────────── */
 /*  Constants & Chain Helpers                                        */
 /* ────────────────────────────────────────────────────────────────── */
@@ -181,7 +183,7 @@ export default function App() {
   return (
     <>
       <div id="title">
-        <div>HashJing Mint 8</div>
+        <div>HashJing Mint</div>
         <div className="net-label">{chain?.name ?? 'No network'}</div>
       </div>
 
@@ -277,7 +279,7 @@ export default function App() {
             ))}
           </div>
         )}
-
+        <ContactBlock />
         <Toaster position="bottom-center" richColors />
       </main>
     </>
