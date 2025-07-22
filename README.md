@@ -55,4 +55,10 @@ Tokens minted here are for testing only and carry no monetary value.
 
 ---
 
+## Contacts and Resources
+
+For a detailed list of HashJing contacts and resources, see the page [Contacts and Resources](https://datasattva.github.io/hashjing-res/)
+
+---
+
 © 2025 DataSattva. Interface code released under the MIT license; visual concept and graphics — all rights reserved.
