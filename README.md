@@ -46,18 +46,18 @@ Tokens minted here are for testing only and carry no monetary value.
 
 ---
 
+## Contacts and Resources
+
+For a detailed list of HashJing contacts and resources, see the page [Contacts and Resources](https://datasattva.github.io/hashjing-res/)
+
+---
+
 ## Links
 
 | Resource | URL |
 |----------|-----|
 | HashJing NFT contract (Sepolia) | **https://sepolia.etherscan.io/address/0x82e502d37013A96D1c862E164a64843EeE45DE5D** |
 | Project source & generator code | **https://github.com/DataSattva/hashjing** |
-
----
-
-## Contacts and Resources
-
-For a detailed list of HashJing contacts and resources, see the page [Contacts and Resources](https://datasattva.github.io/hashjing-res/)
 
 ---
 
