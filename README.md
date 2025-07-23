@@ -5,16 +5,12 @@ This page lets you try the experience on **Sepolia** before the mainnet release.
 
 Tokens minted here are for testing only and carry no monetary value.
 
----
-
 ## What you need
 
 | Item | Details |
 |------|---------|
 | Browser wallet | MetaMask (desktop / mobile) or any WalletConnect-compatible wallet |
 | Sepolia ETH | Grab a small amount from a faucet:<br>• faucet.quicknode.com<br>• sepoliafaucet.com<br>• Alchemy / Infura faucets |
-
----
 
 ## Minting steps
 
@@ -25,8 +21,6 @@ Tokens minted here are for testing only and carry no monetary value.
 5. Wait for the banner **Mint successful**.  
 6. Your SVG and attributes appear in **Your Minted Mandalas**.
 
----
-
 ## Cost
 
 | Item | Amount |
@@ -34,7 +28,42 @@ Tokens minted here are for testing only and carry no monetary value.
 | Mint price | **0.002 ETH** (testnet) |
 | Gas fee | Standard Sepolia gas, paid separately |
 
----
+## Rarity scale
+
+HashJing assigns every trait a five-star rarity rating (percentages are taken from the full-run simulations in
+[TEST_REPORT.md](https://github.com/DataSattva/hashjing-nft/blob/main/TEST_REPORT.md)):
+
+| Share of the collection | Category    | Stars |
+|-------------------------|-------------|-------|
+| **< 1 %**               | Ultra rare  | ★★★★★ |
+| **1 – 5 %**             | Very rare   | ★★★★☆ |
+| **5 – 15 %**            | Uncommon    | ★★★☆☆ |
+| **15 – 30 %**           | Common      | ★★☆☆☆ |
+| **≥ 30 %**              | Very common | ★☆☆☆☆ |
+
+### Balanced trait
+
+* **Balanced = true** ≈ 5 % → ★★★★☆  
+* **Balanced = false** ≈ 95 % → ★☆☆☆☆  
+
+### Passages trait
+
+| Value | % of tokens | Stars |
+|-------|-------------|-------|
+| 0     | 0.06 % | ★★★★★ |
+| 1     | 0.70 % | ★★★★★ |
+| 2     | 4.10 % | ★★★★☆ |
+| 3     | 13.0 % | ★★★☆☆ |
+| 4     | 23.5 % | ★★☆☆☆ |
+| 5     | 27.0 % | ★★☆☆☆ |
+| 6     | 19.0 % | ★★☆☆☆ |
+| 7     | 9.30 % | ★★★☆☆ |
+| 8     | 2.90 % | ★★★★☆ |
+| 9     | 0.55 % | ★★★★★ |
+| 10    | 0.08 % | ★★★★★ |
+| 11    | 0.01 % | ★★★★★ |
+
+The figures come from three complete mint simulations covering all 8 192 possible hashes.
 
 ## FAQ
 
@@ -44,13 +73,10 @@ Tokens minted here are for testing only and carry no monetary value.
 | Is the SVG stored off-chain? | No. The image and metadata are base64-encoded in `tokenURI` inside the contract. |
 | When is the mainnet drop? | Follow the project site or Twitter **@HashJing** for the official announcement. |
 
----
-
 ## Contacts and Resources
 
 For a detailed list of HashJing contacts and resources, see the page [Contacts and Resources](https://datasattva.github.io/hashjing-res/)
 
----
 
 ## Links
 
@@ -59,6 +85,3 @@ For a detailed list of HashJing contacts and resources, see the page [Contacts a
 | HashJing NFT contract (Sepolia) | **https://sepolia.etherscan.io/address/0x82e502d37013A96D1c862E164a64843EeE45DE5D** |
 | Project source & generator code | **https://github.com/DataSattva/hashjing** |
 
----
-
-© 2025 DataSattva. Interface code released under the MIT license; visual concept and graphics — all rights reserved.
