@@ -13,6 +13,7 @@ import { wagmiConfig } from './wagmi'
 import { getPublicClient } from 'wagmi/actions'
 
 import { ContactBlock } from './components/ContactBlock'
+import { RarityBadge } from './components/RarityBadge'
 
 /* ────────────────────────────────────────────────────────────────── */
 /*  Constants & Chain Helpers                                        */
@@ -271,6 +272,7 @@ export default function App() {
                     {t.attributes.map((a: any) => (
                       <li key={a.trait_type}>
                         <strong>{a.trait_type}:</strong> {String(a.value)}
+                        <RarityBadge trait={a.trait_type} value={a.value} />
                       </li>
                     ))}
                   </ul>
