@@ -15,6 +15,9 @@ export const RarityBadge: React.FC<Props> = ({
 }) => {
   const stars = getRarityStars(trait, value)
 
+  // hide badge when no stars (e.g. for Source hash)
+  if (!stars) return null
+
   return (
     <>
       {withPrefix && <span className="rarity-prefix"> | Rarity:&nbsp;</span>}

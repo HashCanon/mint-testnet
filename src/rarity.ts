@@ -14,6 +14,7 @@ export const rarityStars: Record<string, Record<string, string>> = {
 /** Return a string with stars or `null` if there is no data */
   export function getRarityStars(trait: string, value: string|number|boolean) {
     const t = rarityStars[trait]
+    if (trait === 'Source hash') return ''
     return t ? t[String(value)] ?? null : null
   }
   
