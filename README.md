@@ -77,11 +77,3 @@ The figures come from three complete mint simulations covering all 8 192 possibl
 
 For a detailed list of HashJing contacts and resources, see the page [Contacts and Resources](https://datasattva.github.io/hashjing-res/)
 
-
-## Links
-
-| Resource | URL |
-|----------|-----|
-| HashJing NFT contract (Sepolia) | **https://sepolia.etherscan.io/address/0x82e502d37013A96D1c862E164a64843EeE45DE5D** |
-| Project source & generator code | **https://github.com/DataSattva/hashjing** |
-
