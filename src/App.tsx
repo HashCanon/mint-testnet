@@ -89,16 +89,25 @@ export default function App() {
     }
   }, [now, mintingEnabled, waitToast])
 
-  // Countdown formatter
+  // Countdown formatter → "1 d 13 h 42 m 07 s"
   const fmt = (ms: number) => {
-    const s = Math.max(0, Math.floor(ms / 1000))
-    const h = Math.floor((s % 86400) / 3600)
-    const m = Math.floor((s % 3600) / 60)
-    const ss = s % 60
-    return `${h.toString().padStart(2, '0')}:${m
-      .toString()
-      .padStart(2, '0')}:${ss.toString().padStart(2, '0')}`
+    const total = Math.max(0, Math.floor(ms / 1000))
+
+    const d = Math.floor(total / 86_400)
+    const h = Math.floor((total % 86_400) / 3_600)
+    const m = Math.floor((total % 3_600) / 60)
+    const s = total % 60
+
+    const parts: string[] = []
+    if (d) parts.push(`${d} d`)
+    
+    parts.push(`${h} h`)
+    parts.push(`${m.toString().padStart(2, '0')} m`)
+    parts.push(`${s.toString().padStart(2, '0')} s`)
+
+    return parts.join(' ')
   }
+
 
   // Mint button handler
   const handleMint = async () => {
