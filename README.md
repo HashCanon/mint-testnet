@@ -73,7 +73,12 @@ The figures come from three complete mint simulations covering all 8 192 possibl
 | Is the SVG stored off-chain? | No. The image and metadata are base64-encoded in `tokenURI` inside the contract. |
 | When is the mainnet drop? | Follow the project site or Twitter **@HashJing** for the official announcement. |
 
-## Contacts and Resources
+## Community & Support
 
-For a detailed list of HashJing contacts and resources, see the page [Contacts and Resources](https://datasattva.github.io/hashjing-res/)
+[![Join the discussion](https://img.shields.io/github/discussions/DataSattva/hashjing?logo=github)](https://github.com/DataSattva/hashjing/discussions)
+
+Questions, ideas or bug reports?  
+Open a thread in [**HashJing Discussions**](https://github.com/DataSattva/hashjing/discussions) and let’s talk!
+
+For a detailed list of HashJing contacts and resources, see the page [**Contacts and Resources**](https://datasattva.github.io/hashjing-res/).
 

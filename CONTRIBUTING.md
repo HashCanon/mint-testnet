@@ -41,21 +41,23 @@ Simulation scripts that generate rarity statistics live in `scripts/`—see
 | Commit messages        | Conventional Commits (`feat: …`, `fix: …`, `docs: …`)            |
 | Pull request checklist | 1 build passes · 2 lint passes · 3 screenshot/gif for UI changes |
 
----
-
-## License
-
-* **Code**: MIT (see `LICENSE-MIT.md`)
-* **Visuals & mandala concept**: CC BY‑NC 4.0
-
----
 
 ## For end‑users
 
 End‑user instructions live in [`README.md`](https://github.com/DataSattva/hashjing-nft/blob/main/README.md).
 
-## Contacts and Resources
+## Community & Support
 
-For a detailed list of HashJing contacts and resources, see the page [Contacts and Resources](https://datasattva.github.io/hashjing-res/)
+[![Join the discussion](https://img.shields.io/github/discussions/DataSattva/hashjing?logo=github)](https://github.com/DataSattva/hashjing/discussions)
+
+Questions, ideas or bug reports?  
+Open a thread in [**HashJing Discussions**](https://github.com/DataSattva/hashjing/discussions) and let’s talk!
+
+For a detailed list of HashJing contacts and resources, see the page [**Contacts and Resources**](https://datasattva.github.io/hashjing-res/).
+
+## License
+
+* **Code**: MIT (see `LICENSE-MIT.md`)
+* **Visuals & mandala concept**: CC BY‑NC 4.0
 
 Happy hacking —and may your hashes be ever balanced! 🚀
