@@ -5,7 +5,7 @@ import { getRarityStars } from '../rarity'
 interface Props {
   trait: string
   value: string | number | boolean
-  withPrefix?: boolean   // показывает « | Rarity: »
+  withPrefix?: boolean 
 }
 
 export const RarityBadge: React.FC<Props> = ({
