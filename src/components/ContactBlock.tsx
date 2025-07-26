@@ -17,9 +17,8 @@ export const ContactBlock = () => {
             >
               Join the discussion on GitHub
             </a>{' '}
-            and let’s talk!
-          </p>
-          <p>
+            and let’s talk! 
+            <br></br>
             For a detailed list of HashJing contacts and resources, see the page{' '}
             <a
               href="https://datasattva.github.io/hashjing-res/"
