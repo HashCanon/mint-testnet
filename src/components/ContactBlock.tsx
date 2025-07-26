@@ -2,15 +2,25 @@
 import { useEffect, useState } from 'react'
 
 export const ContactBlock = () => {
-
   return (
     <>
-      {/* ------------- CONTACTS ------------- */}
+      {/* ------------- COMMUNITY & SUPPORT ------------- */}
       <section id="contacts">
-        <h2 className="section-title">Contacts and Resources</h2>
+        <h2 className="section-title">Community & Support</h2>
         <div id="contacts-content">
           <p>
-            For a detailed list of HashJing contacts and resources, see the page&nbsp;
+            Questions, ideas or bug reports?{' '}
+            <a
+              href="https://github.com/DataSattva/hashjing/discussions"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Join the discussion on GitHub
+            </a>{' '}
+            and let’s talk!
+          </p>
+          <p>
+            For a detailed list of HashJing contacts and resources, see the page{' '}
             <a
               href="https://datasattva.github.io/hashjing-res/"
               target="_blank"
