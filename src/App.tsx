@@ -206,7 +206,7 @@ export default function App() {
         </div>
       )}
 
-      <main id="mandala-section">
+      <div id="mandala-section">
         <div className="section-title">Mint your unique mandala</div>
         <p className="status">Each token is fully on-chain and costs 0.002 ETH.</p>
 
@@ -290,9 +290,9 @@ export default function App() {
             ))}
           </div>
         )}
-        <ContactBlock />
-        <Toaster position="bottom-center" richColors />
-      </main>
+      </div>
+      <ContactBlock />
+      <Toaster position="bottom-center" richColors />
     </>
   )
 }
