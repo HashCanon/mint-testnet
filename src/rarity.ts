@@ -1,8 +1,8 @@
 /** Constant table of rarity based on the results of 3 simulation runs */
 export const rarityStars: Record<string, Record<string, string>> = {
     Balanced: {
-      true:  '★★★★☆',
-      false: '★☆☆☆☆',
+      Yes:  '★★★★☆',
+      No: '★☆☆☆☆',
     },
     Passages: {
       0:'★★★★★', 1:'★★★★★', 2:'★★★★☆', 3:'★★★☆☆',
