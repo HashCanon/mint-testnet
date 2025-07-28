@@ -1,3 +1,4 @@
+// src/App.tsx
 import { useEffect, useRef, useState } from 'react'
 import { useAccount, useChainId, useChains } from 'wagmi'
 import { toast, Toaster } from 'sonner'
@@ -12,8 +13,12 @@ import { CONTRACTS, MINT_START_TIME, TOTAL_SUPPLY_CAP } from './constants'
 import { wagmiConfig } from './wagmi'
 import { getPublicClient } from 'wagmi/actions'
 
+import { Header } from './components/Header'
+import { Countdown } from './components/Countdown'
+import { WalletInfo } from './components/WalletInfo'
+import { StatusPanel } from './components/StatusPanel'
 import { ContactBlock } from './components/ContactBlock'
-import { RarityBadge } from './components/RarityBadge'
+import { MintedMandalas } from './components/MintedMandalas'
 
 /* ────────────────────────────────────────────────────────────────── */
 /*  Constants & Chain Helpers                                        */
@@ -192,32 +197,19 @@ export default function App() {
 
   return (
     <>
-      <div id="title">
-        <div>HashJing Mint</div>
-        <div className="net-label">{chain?.name ?? 'No network'}</div>
-      </div>
-
-      {now < MINT_START_TIME && mintingEnabled !== true && (
-        <div className="status">
-          <p>Mint starts at {MINT_START_TIME.toUTCString().slice(5, 22)} UTC</p>
-          <p>
-            Available in <strong>{fmt(MINT_START_TIME.getTime() - now.getTime())}</strong>
-          </p>
-        </div>
-      )}
+      <Header chainName={chain?.name} />
+      <Countdown now={now} startTime={MINT_START_TIME} mintingEnabled={mintingEnabled} />
 
       <div id="mandala-section">
         <div className="section-title">Mint your unique mandala</div>
         <p className="status">Each token is fully on-chain and costs 0.002 ETH.</p>
 
-        {isConnected && address ? (
-          <p className="status">
-            Wallet: {address.slice(0, 6)}…{address.slice(-4)} (
-            {networkOk ? `${chain?.name} ✅` : 'Wrong network ❌'})
-          </p>
-        ) : (
-          <p className="status">Please connect wallet ↑</p>
-        )}
+        <WalletInfo
+          isConnected={isConnected}
+          address={address}
+          chainName={chain?.name}
+          networkOk={networkOk}
+        />
 
         <button
           className={`wide-button green-button ${
@@ -243,53 +235,20 @@ export default function App() {
             : 'Mint now'}
         </button>
 
-        <div className="status">
-          <p>
-            Status:{' '}
-            {totalMinted !== null
-              ? `${totalMinted} / ${TOTAL_SUPPLY_CAP} minted`
-              : `__ / ${TOTAL_SUPPLY_CAP} minted`}
-          </p>
-          <p>Price: 0.002 ETH + gas</p>
-          {networkOk && (
-            <p>
-              Contract:{' '}
-              <a
-                href={`https://${chain?.testnet ? 'sepolia.' : ''}etherscan.io/address/${getAddress(chainId)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {getAddress(chainId)?.slice(0, 6)}…{getAddress(chainId)?.slice(-4)}
-              </a>
-            </p>
-          )}
-        </div>
-
-        {mintedTokens.length > 0 && (
-          <div id="preview-section">
-            <h2 className="section-title">Your Minted Mandalas</h2>
-            {mintedTokens.map((t, i) => (
-              <div key={i} className="preview-container">
-                <div
-                  className="svg-preview"
-                  dangerouslySetInnerHTML={{ __html: atob(t.image.split(',')[1]) }}
-                />
-                <div className="traits">
-                  <h3>{t.name}</h3>
-                  <p>{t.description}</p>
-                  <ul>
-                    {t.attributes.map((a: any) => (
-                      <li key={a.trait_type}>
-                        <strong>{a.trait_type}:</strong> {String(a.value)}
-                        <RarityBadge trait={a.trait_type} value={a.value} />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <StatusPanel
+          totalMinted={totalMinted}
+          totalCap={TOTAL_SUPPLY_CAP}
+          priceLabel="0.002 ETH + gas"
+          networkOk={networkOk}
+          contractUrl={
+            networkOk
+              ? `https://${chain?.testnet ? 'sepolia.' : ''}etherscan.io/address/${getAddress(chainId)}`
+              : undefined
+          }
+          contractShort={getAddress(chainId)?.slice(0, 6) + '…' + getAddress(chainId)?.slice(-4)}
+        />
+        
+        <MintedMandalas tokens={mintedTokens} />
       </div>
       <ContactBlock />
       <Toaster position="bottom-center" richColors />
