@@ -1,3 +1,4 @@
+// components/MintedMandalas.tsx
 import { RarityBadge } from './RarityBadge'
 
 type Attribute = { trait_type: string; value: string | number | boolean }
@@ -9,13 +10,12 @@ export interface MintedMandalasProps {
     image: string
     attributes: Attribute[]
   }[]
+  loading?: boolean      
 }
 
-/**
- * Renders a gallery of already-minted mandalas.
- * Hidden when the list is empty.
- */
-export function MintedMandalas({ tokens }: MintedMandalasProps) {
+/** Renders gallery of already-minted mandalas. */
+export function MintedMandalas({ tokens, loading }: MintedMandalasProps) {
+  if (loading) return <p className="status">Loading your mandalas…</p>
   if (!tokens.length) return null
 
   return (
@@ -26,13 +26,12 @@ export function MintedMandalas({ tokens }: MintedMandalasProps) {
         <div key={i} className="preview-container">
           <div
             className="svg-preview"
-            /** image is already base64-encoded SVG */
+            /* image is already base64-encoded SVG */
             dangerouslySetInnerHTML={{ __html: atob(t.image.split(',')[1]) }}
           />
           <div className="traits">
             <h3>{t.name}</h3>
             <p>{t.description}</p>
-
             <ul>
               {t.attributes.map(a => (
                 <li key={a.trait_type}>

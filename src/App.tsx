@@ -8,6 +8,7 @@ import { CONTRACTS, MINT_START_TIME, TOTAL_SUPPLY_CAP } from './constants'
 import { useCountdown } from './hooks/useCountdown'
 import { useMintingStatus } from './hooks/useMintingStatus'
 import { useTotalMinted } from './hooks/useTotalMinted'
+import { useOwnedTokens } from './hooks/useOwnedTokens'
 import { useMint } from './hooks/useMint'
 
 import { Header } from './components/Header'
@@ -40,8 +41,14 @@ export default function App() {
   const mintingEnabled = useMintingStatus()
   const { totalMinted, refresh: refreshTotal } = useTotalMinted()
 
-  const [mintedTokens, setMintedTokens] = useState<any[]>([])
+  const { tokens: ownedTokens, loading: ownedLoading } = useOwnedTokens()
+  const [sessionTokens, setSessionTokens] = useState<any[]>([])   // minted this session
   const [waitToast, setWaitToast] = useState<string | number | null>(null)
+
+  /* wipe session list when wallet disconnects or switches */
+  useEffect(() => {
+    if (!isConnected || !address) setSessionTokens([])
+  }, [isConnected, address])
 
   // Show waiting toast before mint opens
   useEffect(() => {
@@ -59,7 +66,7 @@ export default function App() {
 
   // Mint button handler
   const { mint: handleMint, busy: mintBusy } = useMint({
-    onSuccess: meta => setMintedTokens(prev => [meta, ...prev]),
+    onSuccess: meta => setSessionTokens(prev => [meta, ...prev]),
     onAfterSuccess: refreshTotal,
   })
 
@@ -116,7 +123,11 @@ export default function App() {
           contractShort={getAddress(chainId)?.slice(0, 6) + '…' + getAddress(chainId)?.slice(-4)}
         />
 
-        <MintedMandalas tokens={mintedTokens} />
+      <MintedMandalas
+        tokens={[...sessionTokens, ...ownedTokens]}
+        loading={ownedLoading}
+      />
+
       </div>
       <ContactBlock />
       <Toaster position="bottom-center" richColors />

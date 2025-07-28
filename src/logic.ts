@@ -86,6 +86,9 @@ export const getTokenURI = async (id: number) => {
   return JSON.parse(atob(uri.split(',')[1]))
 }
 
+export const getOwnedTokenIds = async (addr: string): Promise<number[]> =>
+  readPublic<number[]>('tokensOfOwner', [addr])
+
 // ------------------------------------------------------------------
 // Write (mint)
 // ------------------------------------------------------------------
