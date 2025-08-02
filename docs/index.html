@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <meta charset="UTF-8" />
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-LBT8NYF4P7"></script>
     <script>
@@ -13,7 +14,16 @@
       });
     </script>
 
-    <meta charset="UTF-8" />
+    <script>
+      if (
+        localStorage.getItem("theme") === "dark" ||
+        (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)
+      ) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    </script>  
 
     <!-- Favicon and icons -->
     <link rel="icon" href="/mint-testnet/favicon.ico" />
@@ -29,13 +39,9 @@
     <meta name="description" content="HashJing – on-chain mandala NFT testnet minting" />
 
     <title>HashJing Mint | TestNet</title>
-    <link
-      rel="stylesheet"
-      href="https://hashjing.github.io/resources/main.css"
-    />
 
-    <script type="module" crossorigin src="/mint-testnet/assets/index-BIneVYGw.js"></script>
-    <link rel="stylesheet" crossorigin href="/mint-testnet/assets/index-BeWiKZ2B.css">
+    <script type="module" crossorigin src="/mint-testnet/assets/index-D8QDTnlQ.js"></script>
+    <link rel="stylesheet" crossorigin href="/mint-testnet/assets/index-g7qIXzLw.css">
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

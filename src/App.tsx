@@ -17,6 +17,7 @@ import { WalletInfo } from './components/WalletInfo'
 import { StatusPanel } from './components/StatusPanel'
 import { ContactBlock } from './components/ContactBlock'
 import { MintedMandalas } from './components/MintedMandalas'
+import { Button } from "@/components/ui/button"
 
 /* ────────────────────────────────────────────────────────────────── */
 /*  Constants & Chain Helpers                                        */
@@ -74,63 +75,60 @@ export default function App() {
     <>
       <Header chainName={chain?.name} />
       <Countdown now={now} startTime={MINT_START_TIME} mintingEnabled={mintingEnabled} />
+      <main className="mx-auto max-w-screen-md px-4 space-y-8">
+          <h2 className="text-center text-2xl font-semibold tracking-tight">
+            Mint your unique mandala
+          </h2>
+          <div className="space-y-4 text-base leading-relaxed">
+            <p className="status">Each token is fully on-chain and costs 0.002 ETH.</p>
 
-      <div id="mandala-section">
-        <div className="section-title">Mint your unique mandala</div>
-        <p className="status">Each token is fully on-chain and costs 0.002 ETH.</p>
+            <WalletInfo
+              isConnected={isConnected}
+              address={address}
+              chainName={chain?.name}
+              networkOk={networkOk}
+            />
 
-        <WalletInfo
-          isConnected={isConnected}
-          address={address}
-          chainName={chain?.name}
-          networkOk={networkOk}
+            <Button
+              className="rounded-none w-full py-7 text-base font-semibold bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+              disabled={
+                mintBusy || !isConnected || !networkOk ||
+                mintingEnabled !== true ||
+                (totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP)
+              }
+              onClick={handleMint}
+            >
+              {totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP
+                ? 'Sold out ❌'
+                : mintingEnabled === null
+                ? 'Checking status…'
+                : mintingEnabled === false
+                ? 'Mint disabled ❌'
+                : 'Mint now'}
+            </Button>
+          </div>
+          
+
+          <StatusPanel
+            totalMinted={totalMinted}
+            totalCap={TOTAL_SUPPLY_CAP}
+            priceLabel="0.002 ETH + gas"
+            networkOk={networkOk}
+            contractUrl={
+              networkOk
+                ? `https://${chain?.testnet ? 'sepolia.' : ''}etherscan.io/address/${getAddress(chainId)}`
+                : undefined
+            }
+            contractShort={getAddress(chainId)?.slice(0, 6) + '…' + getAddress(chainId)?.slice(-4)}
+          />
+
+        <MintedMandalas
+          tokens={[...sessionTokens, ...ownedTokens]}
+          loading={ownedLoading}
         />
-
-        <button
-          className={`wide-button green-button ${
-            mintBusy || !isConnected || !networkOk ||
-            mintingEnabled !== true ||
-            (totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP)
-              ? 'disabled'
-              : ''
-          }`}
-          disabled={
-            mintBusy || !isConnected || !networkOk ||
-            mintingEnabled !== true ||
-            (totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP)
-          }
-          onClick={handleMint}
-        >
-          {totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP
-            ? 'Sold out ❌'
-            : mintingEnabled === null
-            ? 'Checking status…'
-            : mintingEnabled === false
-            ? 'Mint disabled ❌'
-            : 'Mint now'}
-        </button>
-
-        <StatusPanel
-          totalMinted={totalMinted}
-          totalCap={TOTAL_SUPPLY_CAP}
-          priceLabel="0.002 ETH + gas"
-          networkOk={networkOk}
-          contractUrl={
-            networkOk
-              ? `https://${chain?.testnet ? 'sepolia.' : ''}etherscan.io/address/${getAddress(chainId)}`
-              : undefined
-          }
-          contractShort={getAddress(chainId)?.slice(0, 6) + '…' + getAddress(chainId)?.slice(-4)}
-        />
-
-      <MintedMandalas
-        tokens={[...sessionTokens, ...ownedTokens]}
-        loading={ownedLoading}
-      />
-
-      </div>
-      <ContactBlock />
-      <Toaster position="bottom-center" richColors />
+        <ContactBlock />
+        <Toaster position="bottom-center" richColors />
+      </main>
     </>
   )
 }
