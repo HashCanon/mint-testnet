@@ -22,10 +22,10 @@ const projectId = import.meta.env.VITE_WC_PROJECT_ID ?? ''
 
 // — wagmi config ————————————————————————————————————————————
 export const wagmiConfig = getDefaultConfig({
-  appName: 'HashJing',
+  appName: 'HashCanon',
   projectId,
   chains: CHAINS,
   transports: ENABLE_TESTNETS
-    ? { [sepolia.id]: http(SEPOLIA_RPC) }   // один транспорт
-    : { [mainnet.id]: http(MAINNET_RPC) },  // или другой, если MAINNET
+    ? { [sepolia.id]: http(SEPOLIA_RPC) }   
+    : { [mainnet.id]: http(MAINNET_RPC) },
 })

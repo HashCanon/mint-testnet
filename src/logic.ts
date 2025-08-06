@@ -1,6 +1,6 @@
 // src/logic.ts
 // ------------------------------------------------------------------
-// Chain-agnostic helpers + reads / writes for HashJing NFT contract
+// Chain-agnostic helpers + reads / writes for HashCanon NFT contract
 // ------------------------------------------------------------------
 
 import { wagmiConfig }             from './wagmi'

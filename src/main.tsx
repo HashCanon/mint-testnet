@@ -1,6 +1,6 @@
 // src/main.tsx
 // ------------------------------------------------------------------
-// Root entry for HashJing Mint UI
+// Root entry for HashCanon Mint UI
 // ------------------------------------------------------------------
 
 import React from 'react'
