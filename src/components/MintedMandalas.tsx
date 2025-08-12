@@ -1,56 +1,112 @@
-// components/MintedMandalas.tsx
-import { RarityBadge } from './RarityBadge'
-
-type Attribute = { trait_type: string; value: string | number | boolean }
+// src/components/MintedMandalas.tsx
+import { useEffect, useMemo, useState } from 'react'
+import { MintedCard, type TokenMeta } from './MintedCard'
+import {
+  Pagination, PaginationContent, PaginationEllipsis,
+  PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
+} from '@/components/ui/pagination'
 
 export interface MintedMandalasProps {
-  tokens: {
-    name: string
-    description: string
-    image: string
-    attributes: Attribute[]
-  }[]
-  loading?: boolean      
+  tokens: TokenMeta[]
+  loading?: boolean
+  itemsPerPage?: number
 }
 
-/** Renders gallery of already-minted mandalas. */
-export function MintedMandalas({ tokens, loading }: MintedMandalasProps) {
+function buildPages(current: number, total: number): (number | string)[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const out: (number | string)[] = [1]
+  const start = Math.max(2, current - 1)
+  const end = Math.min(total - 1, current + 1)
+  if (start > 2) out.push('…')
+  for (let p = start; p <= end; p++) out.push(p)
+  if (end < total - 1) out.push('…')
+  out.push(total)
+  return out
+}
+
+export function MintedMandalas({ tokens, loading, itemsPerPage = 10 }: MintedMandalasProps) {
+  // --- hooks MUST be called unconditionally at the top level ---
+  const perPage = Math.max(1, itemsPerPage)
+  const normalized = useMemo(() => tokens, [tokens]) // no dedupe/transform here
+  const [page, setPage] = useState(1)
+
+  const total = normalized.length
+  const pageCount = Math.max(1, Math.ceil(total / perPage))
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount)
+  }, [page, pageCount])
+
+  const start = (page - 1) * perPage
+  const end = Math.min(start + perPage, total)
+  const view = useMemo(() => normalized.slice(start, end), [normalized, start, end])
+  const pageItems = buildPages(page, pageCount)
+  const showPager = pageCount > 1
+
+  // --- only now return on loading/empty ---
   if (loading) return <p className="status">Loading your mandalas…</p>
-  if (!tokens.length) return null
+  if (total === 0) return null
 
   return (
     <div className="space-y-10">
       <h2 className="text-center text-2xl font-semibold tracking-tight">
         Your Minted Mandalas
       </h2>
-      <div className="space-y-4">
-        {tokens.map((t, i) => (
-          <div
-            key={i}
-            className="flex flex-col md:flex-row gap-6 items-start w-full"
-          >
-            <div
-              className="w-[256px] h-[256px] shrink-0"
-              dangerouslySetInnerHTML={{ __html: atob(t.image.split(',')[1]) }}
-            />
 
-            <div className="flex-1 min-w-0 text-sm leading-relaxed space-y-2 break-words">
-              <h3 className="text-lg font-semibold">{t.name}</h3>
-              <p>{t.description}</p>
-              <ul className="space-y-1 break-words">
-                {t.attributes.map(a => (
-                  <li key={a.trait_type}>
-                    <strong>{a.trait_type}:</strong> {String(a.value)}{' '}
-                    <RarityBadge trait={a.trait_type} value={a.value} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+      <div className="space-y-4">
+        {view.map((t) => (
+          <MintedCard
+            key={
+              // stable key: prefer Source hash; fallback to name
+              (t.attributes.find(a => a.trait_type === 'Source hash')?.value as string)
+              ?? `name-${t.name}`
+            }
+            token={t}
+          />
         ))}
       </div>
 
-      
+      {showPager && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={(e) => { e.preventDefault(); setPage(p => Math.max(1, p - 1)) }}
+                aria-disabled={page === 1}
+                className={page === 1 ? 'pointer-events-none opacity-50' : ''}
+              />
+            </PaginationItem>
+
+            {pageItems.map((p, idx) =>
+              typeof p === 'number' ? (
+                <PaginationItem key={`p-${p}-${idx}`}>
+                  <PaginationLink
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); setPage(p) }}
+                    isActive={p === page}
+                  >
+                    {p}
+                  </PaginationLink>
+                </PaginationItem>
+              ) : (
+                <PaginationItem key={`e-${idx}`}>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )
+            )}
+
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(e) => { e.preventDefault(); setPage(p => Math.min(pageCount, p + 1)) }}
+                aria-disabled={page === pageCount}
+                className={page === pageCount ? 'pointer-events-none opacity-50' : ''}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   )
 }

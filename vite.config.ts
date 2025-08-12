@@ -13,6 +13,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, 'src'), 
     },
+    dedupe: ['react', 'react-dom'], // ensure single React instance
   },
   build: {
     outDir: 'docs',   // ⇒ vite build → ./docs
