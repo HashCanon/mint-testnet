@@ -8,8 +8,8 @@ import { CONTRACTS, MINT_START_TIME, TOTAL_SUPPLY_CAP } from './constants'
 import { useCountdown } from './hooks/useCountdown'
 import { useMintingStatus } from './hooks/useMintingStatus'
 import { useTotalMinted } from './hooks/useTotalMinted'
-import { useOwnedTokens } from './hooks/useOwnedTokens'
 import { useMint } from './hooks/useMint'
+import { useOwnedTokensPaged } from './hooks/useOwnedTokensPaged'
 
 import { Header } from './components/Header'
 import { Countdown } from './components/Countdown'
@@ -18,7 +18,6 @@ import { StatusPanel } from './components/StatusPanel'
 import { ContactBlock } from './components/ContactBlock'
 import { MintedMandalas } from './components/MintedMandalas'
 import { Button } from "@/components/ui/button"
-
 
 /* ────────────────────────────────────────────────────────────────── */
 /*  Constants & Chain Helpers                                        */
@@ -43,13 +42,24 @@ export default function App() {
   const mintingEnabled = useMintingStatus()
   const { totalMinted, refresh: refreshTotal } = useTotalMinted()
 
-  const { tokens: ownedTokens, loading: ownedLoading } = useOwnedTokens()
   const [sessionTokens, setSessionTokens] = useState<any[]>([])   // minted this session
   const [waitToast, setWaitToast] = useState<string | number | null>(null)
-  const mintedTokens = useMemo(
-    () => [...sessionTokens, ...ownedTokens],
-    [sessionTokens, ownedTokens]
-  )
+
+  const pageSize = 5
+  const [page, setPage] = useState(1)
+  const { tokens: ownedPageTokens, total: ownedTotal, loading: pagedLoading } =
+  useOwnedTokensPaged({ page, pageSize })
+
+  const [tokensToast, setTokensToast] = useState<string | number | null>(null)
+
+  // Optional: show freshly minted (session) items at the top of page 1
+  const pageTokens = useMemo(() => {
+    if (page !== 1 || sessionTokens.length === 0) return ownedPageTokens
+    // If you want strict page size including session items, slice here
+    return [...sessionTokens, ...ownedPageTokens].slice(0, pageSize)
+  }, [page, pageSize, sessionTokens, ownedPageTokens])
+
+  const totalForPager = ownedTotal + sessionTokens.length
 
   /* wipe session list when wallet disconnects or switches */
   useEffect(() => {
@@ -60,7 +70,7 @@ export default function App() {
   useEffect(() => {
     const afterStart = now >= MINT_START_TIME
     if (afterStart && mintingEnabled === false && !waitToast) {
-      const id = toast('⏳ Waiting for network confirmation…', { duration: Infinity })
+      const id = toast.info('Waiting for network confirmation…', { duration: Infinity })
       setWaitToast(id)
     }
     if (mintingEnabled === true && waitToast) {
@@ -69,6 +79,22 @@ export default function App() {
     }
   }, [now, mintingEnabled, waitToast])
 
+  useEffect(() => {
+    setPage(1)
+  }, [address, chainId])
+
+  // show toast while page of tokens is loading
+  useEffect(() => {
+    // avoid overlapping with the "waiting for network confirmation" toast
+    if (pagedLoading && !tokensToast) {
+      const id = toast.info('Loading your collection…', { duration: Infinity })
+      setTokensToast(id)
+    }
+    if (!pagedLoading && tokensToast) {
+      toast.dismiss(tokensToast)
+      setTokensToast(null)
+    }
+  }, [pagedLoading, tokensToast])
 
   // Mint button handler
   const { mint: handleMint, busy: mintBusy } = useMint({
@@ -127,10 +153,14 @@ export default function App() {
         />
 
         <MintedMandalas
-          tokens={mintedTokens}
-          loading={ownedLoading}
-          itemsPerPage={5}
+          tokens={pageTokens}
+          totalCount={totalForPager}
+          page={page}
+          onPageChange={setPage}
+          loading={pagedLoading}
+          itemsPerPage={pageSize}
         />
+
         <ContactBlock />
         <Toaster position="bottom-center" richColors />
       </main>
