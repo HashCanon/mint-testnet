@@ -10,6 +10,8 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination'
 
+import { Skeleton } from '@/components/ui/skeleton'
+
 export interface MintedMandalasProps {
   tokens: TokenMeta[]          // page slice (not the whole list)
   totalCount: number           // total tokens count for pager
@@ -36,21 +38,13 @@ function buildPages(current: number, totalPages: number): (number | string)[] {
   return out
 }
 
-export function MintedMandalas({
-  tokens,
-  totalCount,
-  page,
-  onPageChange,
-  loading,
-  itemsPerPage = 10,
-}: MintedMandalasProps) {
+export function MintedMandalas({ tokens, totalCount, page, onPageChange, loading, itemsPerPage = 10 }: MintedMandalasProps) {
   const perPage = Math.max(1, itemsPerPage)
   const pageCount = Math.max(1, Math.ceil((totalCount || 0) / perPage))
   const pageItems = useMemo(() => buildPages(page, pageCount), [page, pageCount])
   const showPager = pageCount > 1
 
-  if (loading) return <p className="status">Loading your mandalas…</p>
-  if (!totalCount) return null
+  if (!totalCount && !loading) return null
 
   return (
     <div className="space-y-8">
@@ -65,16 +59,28 @@ export function MintedMandalas({
         </p>
       </div>
 
+      {/* cards or skeletons */}
       <div className="space-y-6">
-        {tokens.map(t => (
-          <MintedCard
-            key={
-              (t.attributes.find(a => a.trait_type === 'Source hash')?.value as string) ??
-              `name-${t.name}`
-            }
-            token={t}
-          />
-        ))}
+        {loading
+          ? Array.from({ length: perPage }).map((_, i) => (
+              <div key={`sk-${i}`} className="flex flex-col md:flex-row gap-6 items-start w-full">
+                {/* image skeleton */}
+                <Skeleton className="w-[256px] h-[256px] shrink-0" />
+                {/* text skeletons */}
+                <div className="flex-1 min-w-0 space-y-3">
+                  <Skeleton className="h-6 w-2/3" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+              </div>
+            ))
+          : tokens.map(t => (
+              <MintedCard
+                key={(t.attributes.find(a => a.trait_type === 'Source hash')?.value as string) ?? `name-${t.name}`}
+                token={t}
+              />
+            ))}
       </div>
 
       {showPager && (
@@ -84,8 +90,8 @@ export function MintedMandalas({
               <PaginationPrevious
                 href="#"
                 onClick={(e) => { e.preventDefault(); onPageChange(Math.max(1, page - 1)) }}
-                aria-disabled={page === 1}
-                className={page === 1 ? 'pointer-events-none opacity-50' : ''}
+                aria-disabled={page === 1 || loading}
+                className={page === 1 || loading ? 'pointer-events-none opacity-50' : ''}
               />
             </PaginationItem>
 
@@ -94,7 +100,7 @@ export function MintedMandalas({
                 <PaginationItem key={`p-${p}-${idx}`}>
                   <PaginationLink
                     href="#"
-                    onClick={(e) => { e.preventDefault(); onPageChange(p) }}
+                    onClick={(e) => { e.preventDefault(); if (!loading) onPageChange(p) }}
                     isActive={p === page}
                   >
                     {p}
@@ -111,8 +117,8 @@ export function MintedMandalas({
               <PaginationNext
                 href="#"
                 onClick={(e) => { e.preventDefault(); onPageChange(Math.min(pageCount, page + 1)) }}
-                aria-disabled={page === pageCount}
-                className={page === pageCount ? 'pointer-events-none opacity-50' : ''}
+                aria-disabled={page === pageCount || loading}
+                className={page === pageCount || loading ? 'pointer-events-none opacity-50' : ''}
               />
             </PaginationItem>
           </PaginationContent>
