@@ -1,7 +1,8 @@
 // src/App.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useAccount, useChainId, useChains } from 'wagmi'
-import { toast, Toaster } from 'sonner'
+import { toast } from 'sonner'
+import { Toaster } from '@/components/ui/sonner'
 
 import { CONTRACTS, MINT_START_TIME, TOTAL_SUPPLY_CAP } from './constants'
 
