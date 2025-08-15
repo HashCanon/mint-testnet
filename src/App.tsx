@@ -11,6 +11,7 @@ import { useMintingStatus } from './hooks/useMintingStatus'
 import { useTotalMinted } from './hooks/useTotalMinted'
 import { useMint } from './hooks/useMint'
 import { useOwnedTokensPaged } from './hooks/useOwnedTokensPaged'
+import { useAutoThemeClass } from './hooks/useAutoThemeClass'
 
 import { Header } from './components/Header'
 import { Countdown } from './components/Countdown'
@@ -61,6 +62,8 @@ export default function App() {
   }, [page, pageSize, sessionTokens, ownedPageTokens])
 
   const totalForPager = ownedTotal + sessionTokens.length
+
+  useAutoThemeClass()
 
   /* wipe session list when wallet disconnects or switches */
   useEffect(() => {
