@@ -10,7 +10,7 @@ import "./index.css"
 
 /* RainbowKit / wagmi */
 import '@rainbow-me/rainbowkit/styles.css'
-import { RainbowKitProvider, ConnectButton } from '@rainbow-me/rainbowkit'
+import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
 import { WagmiConfig } from 'wagmi'
 
 /* shared wagmi / chain config */
@@ -27,8 +27,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <WagmiConfig config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         {/* Sepolia = CHAINS[0] */}
-        <RainbowKitProvider initialChain={CHAINS[0]}>
-          <ConnectButton />
+        <RainbowKitProvider initialChain={CHAINS[0]} modalSize="compact">
           <App />
         </RainbowKitProvider>
       </QueryClientProvider>
