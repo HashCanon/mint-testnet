@@ -110,7 +110,7 @@ export default function App() {
     <>
       <Header chainName={chain?.name} />
       <Countdown now={now} startTime={MINT_START_TIME} mintingEnabled={mintingEnabled} />
-      <main className="mx-auto max-w-screen-md px-4 space-y-8">
+      <main className="mx-auto max-w-screen-md px-4 space-y-8 overflow-x-hidden">
         <h2 className="text-center text-2xl font-semibold tracking-tight">
           Mint your unique mandala
         </h2>
