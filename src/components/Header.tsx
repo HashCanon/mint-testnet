@@ -1,32 +1,34 @@
 // src/components/Header.tsx
+// comments in English only
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 
-interface HeaderProps {
-  chainName?: string
-}
-
-export function Header({ chainName }: HeaderProps) {
+export function Header() {
   return (
-    <div>
-      {/* sticky header bar with centered title */}
-      <div className="sticky top-0 z-10 w-full bg-background border-b border-gray-300">
-        <div className="relative py-3">
-          <h1 className="text-center text-3xl font-bold">HashCanon Mint</h1>
-          {/* place wallet button without affecting centered title */}
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            <ConnectButton
-              showBalance={false}
-              chainStatus="icon" // compact on mobile
-              accountStatus={{ smallScreen: 'avatar', largeScreen: 'full' }}
-            />
-          </div>
+    <header className="sticky top-0 z-10 w-full bg-background border-b border-gray-300">
+      <div
+        className="
+          mx-auto max-w-screen-md px-4 py-3
+          grid items-center gap-2
+          grid-cols-1 md:grid-cols-3
+        "
+      >
+        {/* left spacer on desktop to keep the title perfectly centered */}
+        <div className="hidden md:block" aria-hidden="true" />
+
+        {/* centered title in the middle column on desktop, first row on mobile */}
+        <h1 className="text-center text-3xl font-bold md:col-start-2">
+          HashCanon Mint
+        </h1>
+
+        {/* wallet button: centered on mobile, right-aligned on desktop */}
+        <div className="justify-self-center md:justify-self-end">
+          <ConnectButton
+            showBalance={false}
+            chainStatus="icon"
+            accountStatus="full"
+          />
         </div>
       </div>
-
-      {/* optional chain name line */}
-      <div className="mt-8 mx-auto max-w-screen-md px-4 space-y-8">
-        {chainName ?? 'No network'}
-      </div>
-    </div>
+    </header>
   )
 }
