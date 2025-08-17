@@ -47,7 +47,7 @@ export function MintedMandalas({ tokens, totalCount, page, onPageChange, loading
   if (!totalCount && !loading) return null
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 mt-6">
       <h2 className="text-center text-2xl font-semibold tracking-tight">
         Your Minted Mandalas
       </h2>

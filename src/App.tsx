@@ -20,6 +20,7 @@ import { StatusPanel } from './components/StatusPanel'
 import { ContactBlock } from './components/ContactBlock'
 import { MintedMandalas } from './components/MintedMandalas'
 import { Button } from "@/components/ui/button"
+import { Badge } from '@/components/ui/badge'
 
 /* ────────────────────────────────────────────────────────────────── */
 /*  Constants & Chain Helpers                                        */
@@ -106,55 +107,59 @@ export default function App() {
     onAfterSuccess: refreshTotal,
   })
 
+  const COMMON_ONCHAIN_DESC =
+    'HashCanon is a fully on-chain mandala: a deterministic glyph where entropy becomes form. ' +
+    'A 256-bit cryptographic seed unfolds into self-contained SVG art, following the visual principles of the I Ching. ' +
+    'No IPFS. No servers. Only Ethereum.'
+
   return (
     <>
       <Header chainName={chain?.name} />
       <Countdown now={now} startTime={MINT_START_TIME} mintingEnabled={mintingEnabled} />
       <main className="mx-auto max-w-screen-md px-4 space-y-8 overflow-x-hidden">
-        <h2 className="text-center text-2xl font-semibold tracking-tight">
-          Mint your unique mandala
-        </h2>
-        <div className="space-y-4 text-base leading-relaxed">
-          <p className="status">Each token is fully on-chain and costs 0.002 ETH.</p>
+        <section className="space-y-4 mt-8">
+          <h2 className="text-center text-2xl font-semibold tracking-tight">
+            Mint your unique mandala
+          </h2>
+          <div className="space-y-4 text-base leading-relaxed">
+            <WalletInfo
+              isConnected={isConnected}
+              chainId={chainId}
+            />
 
-          <WalletInfo
-            isConnected={isConnected}
-            address={address}
-            chainName={chain?.name}
+            <p className="status">{COMMON_ONCHAIN_DESC}</p>
+
+            <Button
+              className="rounded-none w-full py-7 text-base font-semibold bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+              disabled={
+                mintBusy || !isConnected || !networkOk ||
+                mintingEnabled !== true ||
+                (totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP)
+              }
+              onClick={handleMint}
+            >
+              {totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP
+                ? 'Sold out ❌'
+                : mintingEnabled === null
+                ? 'Checking status…'
+                : mintingEnabled === false
+                ? 'Mint disabled ❌'
+                : 'Mint now'}
+            </Button>
+          </div>
+          <StatusPanel
+            totalMinted={totalMinted}
+            totalCap={TOTAL_SUPPLY_CAP}
+            priceLabel="0.002 ETH + gas"
             networkOk={networkOk}
-          />
-
-          <Button
-            className="rounded-none w-full py-7 text-base font-semibold bg-green-600 hover:bg-green-700 text-white cursor-pointer"
-            disabled={
-              mintBusy || !isConnected || !networkOk ||
-              mintingEnabled !== true ||
-              (totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP)
+            contractUrl={
+              networkOk
+                ? `https://${chain?.testnet ? 'sepolia.' : ''}etherscan.io/address/${getAddress(chainId)}`
+                : undefined
             }
-            onClick={handleMint}
-          >
-            {totalMinted !== null && totalMinted >= TOTAL_SUPPLY_CAP
-              ? 'Sold out ❌'
-              : mintingEnabled === null
-              ? 'Checking status…'
-              : mintingEnabled === false
-              ? 'Mint disabled ❌'
-              : 'Mint now'}
-          </Button>
-        </div>
-
-        <StatusPanel
-          totalMinted={totalMinted}
-          totalCap={TOTAL_SUPPLY_CAP}
-          priceLabel="0.002 ETH + gas"
-          networkOk={networkOk}
-          contractUrl={
-            networkOk
-              ? `https://${chain?.testnet ? 'sepolia.' : ''}etherscan.io/address/${getAddress(chainId)}`
-              : undefined
-          }
-          contractShort={getAddress(chainId)?.slice(0, 6) + '…' + getAddress(chainId)?.slice(-4)}
-        />
+            contractShort={getAddress(chainId)?.slice(0, 6) + '…' + getAddress(chainId)?.slice(-4)}
+          />
+        </section>
 
         <MintedMandalas
           tokens={pageTokens}

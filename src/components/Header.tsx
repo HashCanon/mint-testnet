@@ -1,5 +1,4 @@
 // src/components/Header.tsx
-// comments in English only
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 
 export function Header() {
@@ -12,15 +11,13 @@ export function Header() {
           grid-cols-1 md:grid-cols-3
         "
       >
-        {/* left spacer on desktop to keep the title perfectly centered */}
+        {/* left spacer to keep the title perfectly centered */}
         <div className="hidden md:block" aria-hidden="true" />
-
-        {/* centered title in the middle column on desktop, first row on mobile */}
+        {/* centered title */}
         <h1 className="text-center text-3xl font-bold md:col-start-2">
           HashCanon Mint
         </h1>
-
-        {/* wallet button: centered on mobile, right-aligned on desktop */}
+        {/* wallet button */}
         <div className="justify-self-center md:justify-self-end">
           <ConnectButton
             showBalance={false}
