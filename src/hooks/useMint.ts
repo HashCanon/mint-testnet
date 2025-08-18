@@ -20,12 +20,7 @@ import { getPublicClient, watchContractEvent } from 'wagmi/actions'
 import { wagmiConfig } from '../wagmi'
 
 type Options = {
-  /** Called after metadata has been fetched successfully */
   onSuccess(meta: any): void
-  /**
-   * Should return the freshly updated totalSupply or tokenId.
-   * If your token IDs are 1-based, returning totalSupply is fine.
-   */
   onAfterSuccess?(): Promise<number | undefined> | number | undefined
 }
 
@@ -33,6 +28,7 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
   const { address } = useAccount()
   const chainId = useChainId()
   const nftAddress = (CONTRACTS[chainId] ?? '') as `0x${string}`
+  const my = (address ?? '').toLowerCase()
 
   // Ensure we handle each tx success only once (StrictMode/HMR safe)
   const handledTxRef = useRef<`0x${string}` | null>(null)
@@ -47,9 +43,9 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
   // Start write; wagmi tracks "signing" state internally
   const {
     writeContractAsync,
-    data: txHash,          // transaction hash when available
-    isPending: isSigning,  // waiting for wallet confirmation
-    reset: resetWrite,     // must be called to allow the next mint
+    data: txHash,
+    isPending: isSigning,
+    reset: resetWrite,
   } = useWriteContract()
 
   // Wait for mining by tx hash; wagmi handles background/return-to-app
@@ -86,10 +82,9 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
     }
   }, [txHash, isMined])
 
-  // Handle success via on-chain event or by receipt mining (single path)
+  // Success: single handler (by event or by receipt)
   const handleSuccessOnce = async (maybeTokenId?: number) => {
-    // Guard: if receipt already handled for this hash, ignore
-    if (handledTxRef.current && handledTxRef.current === txHash) return
+    if (handledTxRef.current === (txHash ?? '0x')) return
     handledTxRef.current = (txHash ?? '0x') as `0x${string}`
 
     stopWatch()
@@ -98,7 +93,6 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
 
     toast.success('Mint successful!')
 
-    // Get token id either from event or via onAfterSuccess
     let newId = maybeTokenId
     if (typeof newId !== 'number' && onAfterSuccess) {
       try {
@@ -121,14 +115,14 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
     resetWrite() // allow the next mint
   }
 
-  // Success: mined → fallback path if event wasn't caught
+  // Success by mined receipt (fallback if event missed)
   useEffect(() => {
-    if (!isMined || !txHash) return
+    if (!isMined) return
     handleSuccessOnce()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMined, txHash])
+  }, [isMined])
 
-  // Reset guards when a new attempt starts (no hash yet)
+  // Reset guard when a new attempt starts (no hash yet)
   useEffect(() => {
     if (!txHash) handledTxRef.current = null
   }, [txHash])
@@ -144,6 +138,24 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
     resetWrite()
   }, [isMineError, mineError, resetWrite])
 
+  // Mobile-specific: when returning from wallet, if we are still "signing" but have no txHash,
+  // treat it as a dismissed signature and reset local state.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      if (isSigning && !txHash) {
+        // user likely canceled or wallet didn't respond
+        stopWatch()
+        if (confirmToast.current) { toast.dismiss(confirmToast.current); confirmToast.current = null }
+        if (miningToast.current)  { toast.dismiss(miningToast.current);  miningToast.current  = null }
+        handledTxRef.current = null
+        resetWrite()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [isSigning, txHash, resetWrite])
+
   // Clean up on unmount
   useEffect(() => stopWatch, [])
 
@@ -152,40 +164,41 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
     if (!nftAddress) return toast.error('Wrong network')
     if (!address)    return toast.error('Wallet not connected')
 
-    try {
-      // 1) Prepare an on-chain event watcher as a reliable fallback
-      const client = getPublicClient(wagmiConfig, { chainId })
-      const fromBlock = await client.getBlockNumber() // start at current height
+    // If previous signing is stuck, reset before new attempt
+    if (isSigning) {
+      stopWatch()
+      handledTxRef.current = null
+      resetWrite()
+    }
 
-      // Subscribe to ERC-721 Transfer(to = my address) from current height
+    try {
+      // Prepare an on-chain event watcher as a reliable fallback
+      const client = getPublicClient(wagmiConfig, { chainId })
+      const fromBlock = await client.getBlockNumber()
+
       stopWatch()
       unwatchRef.current = watchContractEvent(wagmiConfig, {
         address: nftAddress,
         abi: HASHCANON_ABI,
         eventName: 'Transfer',
-        args: { to: address },       // indexed topic filter
-        fromBlock,                   // catch-up if app was backgrounded
+        // Do not rely on checksum; filter manually inside onLogs
+        fromBlock,
         onLogs: (logs) => {
-          // Handle the first matching log only
-          const log = logs[0]
-          const tokenId = Number(log?.args?.tokenId)
+          const hit = logs.find(l => String(l.args?.to ?? '').toLowerCase() === my)
+          if (!hit) return
+          const tokenId = Number(hit.args?.tokenId)
           handleSuccessOnce(Number.isFinite(tokenId) ? tokenId : undefined)
         },
       })
 
-      // Safety: auto-unsubscribe after 3 minutes to avoid leaks
-      setTimeout(stopWatch, 180_000)
-
-      // 2) Fire the transaction (WC/MetaMask will open)
+      // Fire the transaction (WC/MetaMask will open)
       await writeContractAsync({
         address: nftAddress,
         abi: HASHCANON_ABI,
         functionName: 'mint',
         value: parseEther('0.002'),
       })
-      // Flow continues via:
-      // - event watcher (preferred on mobile), or
-      // - isSigning → txHash → isMined (desktop and some wallets)
+      // Flow continues via event watcher or mined receipt
     } catch (err: any) {
       // User rejected / transport error before hash
       stopWatch()
