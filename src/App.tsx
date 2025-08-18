@@ -19,18 +19,9 @@ import { WalletInfo } from './components/WalletInfo'
 import { StatusPanel } from './components/StatusPanel'
 import { ContactBlock } from './components/ContactBlock'
 import { MintedMandalas } from './components/MintedMandalas'
-import { Button } from "@/components/ui/button"
-import { Badge } from '@/components/ui/badge'
-
-/* ────────────────────────────────────────────────────────────────── */
-/*  Constants & Chain Helpers                                        */
-/* ────────────────────────────────────────────────────────────────── */
+import { Button } from '@/components/ui/button'
 
 const getAddress = (id?: number) => (id && CONTRACTS[id]) || undefined
-
-/* ────────────────────────────────────────────────────────────────── */
-/*  Component                                                        */
-/* ────────────────────────────────────────────────────────────────── */
 
 export default function App() {
   // Wallet & Network Info
@@ -45,33 +36,54 @@ export default function App() {
   const mintingEnabled = useMintingStatus()
   const { totalMinted, refresh: refreshTotal } = useTotalMinted()
 
-  const [sessionTokens, setSessionTokens] = useState<any[]>([])   // minted this session
+  // session-minted items (shown on top of page 1)
+  const [sessionTokens, setSessionTokens] = useState<any[]>([])
+
+  // mint handler (single source of truth)
+  const { mint: handleMint, busy: mintBusy } = useMint({
+    onSuccess: meta =>
+      setSessionTokens(prev => {
+        // de-duplicate by a stable key
+        const key = meta?.sourceHash ?? meta?.tokenId ?? meta?.id
+        if (key && prev.some(t => (t?.sourceHash ?? t?.tokenId ?? t?.id) === key)) return prev
+        return [meta, ...prev]
+      }),
+    onAfterSuccess: refreshTotal, // returns number (totalSupply or id)
+  })
+
   const [waitToast, setWaitToast] = useState<string | number | null>(null)
 
   const pageSize = 5
   const [page, setPage] = useState(1)
   const { tokens: ownedPageTokens, total: ownedTotal, loading: pagedLoading } =
-  useOwnedTokensPaged({ page, pageSize })
+    useOwnedTokensPaged({ page, pageSize })
 
   const [tokensToast, setTokensToast] = useState<string | number | null>(null)
 
-  // Optional: show freshly minted (session) items at the top of page 1
+  // Merge session + owned (page 1) with de-duplication
   const pageTokens = useMemo(() => {
-    if (page !== 1 || sessionTokens.length === 0) return ownedPageTokens
-    // If you want strict page size including session items, slice here
-    return [...sessionTokens, ...ownedPageTokens].slice(0, pageSize)
+    const merge = page === 1 ? [...sessionTokens, ...ownedPageTokens] : ownedPageTokens
+    const seen = new Set<string>()
+    const uniq = merge.filter((t: any) => {
+      const key = String(t?.sourceHash ?? t?.tokenId ?? t?.id ?? '')
+      if (!key) return true
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    return page === 1 ? uniq.slice(0, pageSize) : uniq
   }, [page, pageSize, sessionTokens, ownedPageTokens])
 
   const totalForPager = ownedTotal + sessionTokens.length
 
   useAutoThemeClass()
 
-  /* wipe session list when wallet disconnects or switches */
+  // wipe session list when wallet disconnects or switches
   useEffect(() => {
     if (!isConnected || !address) setSessionTokens([])
   }, [isConnected, address])
 
-  // Show waiting toast before mint opens
+  // "Waiting for network confirmation…" before mint opens
   useEffect(() => {
     const afterStart = now >= MINT_START_TIME
     if (afterStart && mintingEnabled === false && !waitToast) {
@@ -84,13 +96,13 @@ export default function App() {
     }
   }, [now, mintingEnabled, waitToast])
 
+  // Reset to page 1 on wallet/chain change
   useEffect(() => {
     setPage(1)
   }, [address, chainId])
 
-  // show toast while page of tokens is loading
+  // "Loading your collection…" while a page is loading
   useEffect(() => {
-    // avoid overlapping with the "waiting for network confirmation" toast
     if (pagedLoading && !tokensToast) {
       const id = toast.info('Loading your collection…', { duration: Infinity })
       setTokensToast(id)
@@ -100,12 +112,6 @@ export default function App() {
       setTokensToast(null)
     }
   }, [pagedLoading, tokensToast])
-
-  // Mint button handler
-  const { mint: handleMint, busy: mintBusy } = useMint({
-    onSuccess: meta => setSessionTokens(prev => [meta, ...prev]),
-    onAfterSuccess: refreshTotal,
-  })
 
   const COMMON_ONCHAIN_DESC =
     'HashCanon is a fully on-chain mandala: a deterministic glyph where entropy becomes form. ' +
@@ -121,11 +127,9 @@ export default function App() {
           <h2 className="text-center text-2xl font-semibold tracking-tight">
             Mint your unique mandala
           </h2>
+
           <div className="space-y-4 text-base leading-relaxed">
-            <WalletInfo
-              isConnected={isConnected}
-              chainId={chainId}
-            />
+            <WalletInfo isConnected={isConnected} chainId={chainId} />
 
             <p className="status">{COMMON_ONCHAIN_DESC}</p>
 
@@ -147,6 +151,7 @@ export default function App() {
                 : 'Mint now'}
             </Button>
           </div>
+
           <StatusPanel
             totalMinted={totalMinted}
             totalCap={TOTAL_SUPPLY_CAP}

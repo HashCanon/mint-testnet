@@ -55,27 +55,20 @@ const readPublic = async <R = unknown>(
 // ------------------------------------------------------------------
 
 export const getMintingStatus = async (): Promise<boolean> => {
-  // Log **every** call so it is visible in the browser console / terminal
   console.log('[logic] mintingEnabled() → requesting status')
-
   try {
-  const enabled = await readPublic<boolean>('mintingEnabled')
-  console.log(`[logic] mintingEnabled() → ${enabled}`)
-  return enabled
+    const enabled = await readPublic<boolean>('mintingEnabled')
+    console.log(`[logic] mintingEnabled() → ${enabled}`)
+    return enabled
   } catch (err) {
-  console.warn(
-    `[logic] mintingEnabled() failed (${(err as Error).message}); falling back to TRUE`,
+    console.warn(
+      `[logic] mintingEnabled() failed (${(err as Error).message}); falling back to TRUE`,
     )
-  return true
-  }
-
-  try   { return await readPublic<boolean>('mintingEnabled') }
-  catch  {
-    console.warn('mintingEnabled() failed – fallback to TRUE')
     return true
   }
 }
 
+/** Total supply as number (safe for <= 8192). */
 export const getTotalMinted = async (): Promise<number> => {
   const total = await readPublic<bigint>('totalSupply')
   return Number(total)
@@ -86,8 +79,11 @@ export const getTokenURI = async (id: number) => {
   return JSON.parse(atob(uri.split(',')[1]))
 }
 
-export const getOwnedTokenIds = async (addr: string): Promise<number[]> =>
-  readPublic<number[]>('tokensOfOwner', [addr])
+/** Owner tokens as number[] (contract returns uint256[]). */
+export const getOwnedTokenIds = async (addr: string): Promise<number[]> => {
+  const ids = await readPublic<bigint[]>('tokensOfOwner', [addr])
+  return ids.map(Number)
+}
 
 // ------------------------------------------------------------------
 // Write (mint)
@@ -101,10 +97,10 @@ export const sendMintTx = async () => {
     account:   wc.account,
     chainId:   wc.chain.id as SupportedChain,
     address:   CONTRACTS[wc.chain.id as SupportedChain],
-    abi:       CONTRACT_ABI,
+    abi:       CONTRACT_ABI,            // <-- array
     functionName: 'mint',
-    args:      [],                              // empty array is mandatory
-    value:     BigInt(2_000_000_000_000_000),   // 0.002 ETH
+    args:      [],                      // optional
+    value:     BigInt(2_000_000_000_000_000), // 0.002 ETH
   })
 
   return { hash, chainId: wc.chain.id as SupportedChain }

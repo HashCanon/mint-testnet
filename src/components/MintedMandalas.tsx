@@ -22,9 +22,7 @@ export interface MintedMandalasProps {
 }
 
 const COMMON_ONCHAIN_DESC =
-  'HashCanon is a fully on-chain mandala: a deterministic glyph where entropy becomes form. ' +
-  'A 256-bit cryptographic seed unfolds into self-contained SVG art, following the visual principles of the I Ching. ' +
-  'No IPFS. No servers. Only Ethereum.'
+  'Some discription...'
 
 function buildPages(current: number, totalPages: number): (number | string)[] {
   if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -55,7 +53,7 @@ export function MintedMandalas({ tokens, totalCount, page, onPageChange, loading
       <div className="text-sm md:text-base leading-relaxed space-y-2">
         <p>{COMMON_ONCHAIN_DESC}</p>
         <p className="text-muted-foreground">
-          <em>Common on-chain description for the entire collection.</em>
+          <em>if needed.</em>
         </p>
       </div>
 
