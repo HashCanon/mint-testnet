@@ -15,7 +15,7 @@ export function Header() {
         <div className="hidden md:block" aria-hidden="true" />
         {/* centered title */}
         <h1 className="text-center text-3xl font-bold md:col-start-2">
-          HashCanon Mint
+          HashCanon Mint 2
         </h1>
         {/* wallet button */}
         <div className="justify-self-center md:justify-self-end">
