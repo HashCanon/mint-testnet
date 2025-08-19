@@ -11,11 +11,11 @@ import { parseEther, type Abi } from 'viem'
 import { CONTRACTS } from '../constants'
 import { getTokenURI } from '../logic'
 
-// Load ABI array only (not the whole artifact object)
+// Import ABI array
 import artifact from '../HashCanonNFT.json'
 const HASHCANON_ABI = (artifact as { abi: Abi }).abi
 
-// Low-level actions to watch events / read chain state
+// Low-level actions for event watching
 import { getPublicClient, watchContractEvent } from 'wagmi/actions'
 import { wagmiConfig } from '../wagmi'
 
@@ -30,17 +30,14 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
   const nftAddress = (CONTRACTS[chainId] ?? '') as `0x${string}`
   const my = (address ?? '').toLowerCase()
 
-  // Ensure we handle each tx success only once (StrictMode/HMR safe)
+  // One-shot guard per tx hash (StrictMode/HMR safe)
   const handledTxRef = useRef<`0x${string}` | null>(null)
 
-  // Keep an active event watcher (unsubscribe on success/error/unmount)
+  // Active event watcher unsubscribe
   const unwatchRef = useRef<null | (() => void)>(null)
-  const stopWatch = () => {
-    try { unwatchRef.current?.() } catch {}
-    unwatchRef.current = null
-  }
+  const stopWatch = () => { try { unwatchRef.current?.() } finally { unwatchRef.current = null } }
 
-  // Start write; wagmi tracks "signing" state internally
+  // Write + mined receipt
   const {
     writeContractAsync,
     data: txHash,
@@ -48,7 +45,6 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
     reset: resetWrite,
   } = useWriteContract()
 
-  // Wait for mining by tx hash; wagmi handles background/return-to-app
   const {
     isLoading: isMining,
     isSuccess: isMined,
@@ -56,11 +52,11 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
     error: mineError,
   } = useWaitForTransactionReceipt({ hash: txHash as `0x${string}` | undefined })
 
-  // Toast ids to avoid duplicates
+  // Toast refs
   const confirmToast = useRef<number | string | null>(null)
   const miningToast  = useRef<number | string | null>(null)
 
-  // Signing → show/dismiss "Waiting for wallet confirmation…"
+  // Signing toast
   useEffect(() => {
     if (isSigning && !confirmToast.current) {
       confirmToast.current = toast.info('Waiting for wallet confirmation…', { duration: Infinity })
@@ -71,7 +67,7 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
     }
   }, [isSigning])
 
-  // When hash appears → show "Minting…" until mined
+  // Minting toast (by hash or active watcher on resume)
   useEffect(() => {
     if (txHash && !isMined && !miningToast.current) {
       miningToast.current = toast.info('Minting…', { duration: Infinity })
@@ -82,7 +78,19 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
     }
   }, [txHash, isMined])
 
-  // Success: single handler (by event or by receipt)
+  // On visibility back: if a watcher is active but no hash yet, show "Minting…"
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      if (unwatchRef.current && !txHash && !miningToast.current) {
+        miningToast.current = toast.info('Minting…', { duration: Infinity })
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [txHash])
+
+  // Unified success handler (event or receipt)
   const handleSuccessOnce = async (maybeTokenId?: number) => {
     if (handledTxRef.current === (txHash ?? '0x')) return
     handledTxRef.current = (txHash ?? '0x') as `0x${string}`
@@ -112,22 +120,22 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
       }
     }
 
-    resetWrite() // allow the next mint
+    resetWrite()
   }
 
-  // Success by mined receipt (fallback if event missed)
+  // Fallback success by mined receipt
   useEffect(() => {
     if (!isMined) return
     handleSuccessOnce()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMined])
 
-  // Reset guard when a new attempt starts (no hash yet)
+  // Reset guard when no hash
   useEffect(() => {
     if (!txHash) handledTxRef.current = null
   }, [txHash])
 
-  // Error: signing canceled OR mining failed
+  // Errors from mined stage
   useEffect(() => {
     if (!isMineError) return
     stopWatch()
@@ -138,25 +146,7 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
     resetWrite()
   }, [isMineError, mineError, resetWrite])
 
-  // Mobile-specific: when returning from wallet, if we are still "signing" but have no txHash,
-  // treat it as a dismissed signature and reset local state.
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState !== 'visible') return
-      if (isSigning && !txHash) {
-        // user likely canceled or wallet didn't respond
-        stopWatch()
-        if (confirmToast.current) { toast.dismiss(confirmToast.current); confirmToast.current = null }
-        if (miningToast.current)  { toast.dismiss(miningToast.current);  miningToast.current  = null }
-        handledTxRef.current = null
-        resetWrite()
-      }
-    }
-    document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [isSigning, txHash, resetWrite])
-
-  // Clean up on unmount
+  // Cleanup
   useEffect(() => stopWatch, [])
 
   // Click handler
@@ -164,15 +154,15 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
     if (!nftAddress) return toast.error('Wrong network')
     if (!address)    return toast.error('Wallet not connected')
 
-    // If previous signing is stuck, reset before new attempt
-    if (isSigning) {
+    // If previous attempt is stuck, clean it before new one
+    if (isSigning || unwatchRef.current) {
       stopWatch()
       handledTxRef.current = null
       resetWrite()
     }
 
     try {
-      // Prepare an on-chain event watcher as a reliable fallback
+      // Prepare on-chain event watcher BEFORE opening wallet
       const client = getPublicClient(wagmiConfig, { chainId })
       const fromBlock = await client.getBlockNumber()
 
@@ -181,7 +171,6 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
         address: nftAddress,
         abi: HASHCANON_ABI,
         eventName: 'Transfer',
-        // Do not rely on checksum; filter manually inside onLogs
         fromBlock,
         onLogs: (logs) => {
           const hit = logs.find(l => String(l.args?.to ?? '').toLowerCase() === my)
@@ -191,21 +180,25 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
         },
       })
 
-      // Fire the transaction (WC/MetaMask will open)
+      // Fire transaction (explicit account/chainId helps some mobile wallets)
       await writeContractAsync({
+        account: address as `0x${string}`,
+        chainId,
         address: nftAddress,
         abi: HASHCANON_ABI,
         functionName: 'mint',
         value: parseEther('0.002'),
       })
-      // Flow continues via event watcher or mined receipt
+      // Flow continues via watcher or mined receipt
     } catch (err: any) {
       // User rejected / transport error before hash
-      stopWatch()
+      // Keep watcher running for a short while — but toasts must be cleaned
       if (confirmToast.current) { toast.dismiss(confirmToast.current); confirmToast.current = null }
       if (miningToast.current)  { toast.dismiss(miningToast.current);  miningToast.current  = null }
       toast.error(err?.shortMessage ?? err?.message ?? 'Transaction failed')
       handledTxRef.current = null
+      // If the wallet rejected immediately, no event will come — stop watcher
+      stopWatch()
       resetWrite()
     }
   }
