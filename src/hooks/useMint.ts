@@ -1,4 +1,3 @@
-// hooks/useMint.ts
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useAccount, useChainId } from 'wagmi'
@@ -20,7 +19,12 @@ import {
 import { wagmiConfig } from '../wagmi'
 
 type Options = {
+  /** called after metadata is fetched */
   onSuccess(meta: any): void
+  /**
+   * should return the freshly updated totalSupply or tokenId
+   * (returning totalSupply is fine for 1-based IDs)
+   */
   onAfterSuccess?(): Promise<number | undefined> | number | undefined
 }
 
@@ -32,29 +36,28 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
 
   const [busy, setBusy] = useState(false)
 
-  // One-shot guards / refs
-  const handledTxRef = useRef<`0x${string}` | null>(null)
+  // guards / refs
+  const doneRef      = useRef(false)               // ensures we finalize only once
   const txHashRef    = useRef<`0x${string}` | null>(null)
+  const unwatchRef   = useRef<null | (() => void)>(null)
 
-  // Active event watcher
-  const unwatchRef = useRef<null | (() => void)>(null)
-  const stopWatch = () => { try { unwatchRef.current?.() } finally { unwatchRef.current = null } }
-
-  // Toast ids
+  // toast ids
   const confirmToast = useRef<number | string | null>(null)
   const miningToast  = useRef<number | string | null>(null)
 
-  // Unified success handler (by event or receipt)
-  const handleSuccessOnce = async (maybeTokenId?: number) => {
-    const k = (txHashRef.current ?? '0x') as `0x${string}`
-    if (handledTxRef.current === k) return
-    handledTxRef.current = k
-
-    stopWatch()
+  const stopWatch = () => { try { unwatchRef.current?.() } finally { unwatchRef.current = null } }
+  const clearToasts = () => {
     if (confirmToast.current) { toast.dismiss(confirmToast.current); confirmToast.current = null }
     if (miningToast.current)  { toast.dismiss(miningToast.current);  miningToast.current  = null }
+  }
 
-    toast.success('Mint successful!')
+  const finalizeOnce = async (maybeTokenId?: number) => {
+    if (doneRef.current) return
+    doneRef.current = true
+
+    stopWatch()
+    clearToasts()
+    toast.success('Mint successful!', { duration: 3000 })
 
     let newId = maybeTokenId
     if (typeof newId !== 'number' && onAfterSuccess) {
@@ -79,30 +82,31 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
     setBusy(false)
   }
 
-  // Cleanup on unmount
+  // cleanup on unmount
   useEffect(() => stopWatch, [])
 
-  // Click handler
   const mint = async () => {
     if (!nftAddress) return toast.error('Wrong network')
     if (!address)    return toast.error('Wallet not connected')
     if (busy)        return
 
+    // reset per attempt
     setBusy(true)
-    handledTxRef.current = null
-    txHashRef.current    = null
+    doneRef.current   = false
+    txHashRef.current = null
     stopWatch()
+    clearToasts()
 
-    // Show "Waiting…" immediately when we hand control to wallet
+    // show “waiting for wallet…” as soon as we hand off to wallet
     confirmToast.current = toast.info('Waiting for wallet confirmation…', { duration: Infinity })
 
     try {
-      // Prepare clients
+      // clients
       const wallet = await getWalletClient(wagmiConfig)
       if (!wallet) throw new Error('Wallet not found')
       const publicClient = getPublicClient(wagmiConfig, { chainId })
 
-      // Start Transfer watcher BEFORE sending tx
+      // start Transfer watcher BEFORE sending the tx
       const fromBlock = await publicClient.getBlockNumber()
       unwatchRef.current = watchContractEvent(wagmiConfig, {
         address: nftAddress,
@@ -110,14 +114,15 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
         eventName: 'Transfer',
         fromBlock,
         onLogs: (logs) => {
+          if (doneRef.current) return
           const hit = logs.find(l => String(l.args?.to ?? '').toLowerCase() === my)
           if (!hit) return
           const tokenId = Number(hit.args?.tokenId)
-          handleSuccessOnce(Number.isFinite(tokenId) ? tokenId : undefined)
+          finalizeOnce(Number.isFinite(tokenId) ? tokenId : undefined)
         },
       })
 
-      // Simulate to build a concrete request (helps MM mobile to always open sign screen)
+      // build concrete request (helps MetaMask Mobile always show confirm UI)
       const { request } = await publicClient.simulateContract({
         account: wallet.account,
         address: nftAddress,
@@ -126,25 +131,26 @@ export function useMint({ onSuccess, onAfterSuccess }: Options) {
         value: parseEther('0.002'),
       })
 
-      // Send — at this moment MetaMask should always show confirmation UI
+      // send — MetaMask should pop the confirmation here
       const hash = await writeContract(wagmiConfig, request)
       txHashRef.current = hash
 
-      // Switch to "Minting…" only after we actually got a tx hash
+      // switch to “Minting…” only after real txHash
       if (confirmToast.current) { toast.dismiss(confirmToast.current); confirmToast.current = null }
       miningToast.current = toast.info('Minting…', { duration: Infinity })
 
-      // Fallback: if event is missed, finish on mined receipt
-      await publicClient.waitForTransactionReceipt({ hash })
-      await handleSuccessOnce()
+      // fallback: if the event is missed, finalize on mined receipt
+      publicClient.waitForTransactionReceipt({ hash })
+        .then(() => finalizeOnce())
+        .catch(() => { /* ignore; error handled below if send fails */ })
+
     } catch (err: any) {
-      // User rejected / transport error before hash
+      // user rejected / transport error before hash
       stopWatch()
-      if (confirmToast.current) { toast.dismiss(confirmToast.current); confirmToast.current = null }
-      if (miningToast.current)  { toast.dismiss(miningToast.current);  miningToast.current  = null }
+      clearToasts()
       toast.error(err?.shortMessage ?? err?.message ?? 'Transaction failed')
       txHashRef.current = null
-      handledTxRef.current = null
+      doneRef.current = false
       setBusy(false)
     }
   }
