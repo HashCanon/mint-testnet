@@ -21,6 +21,8 @@ import { ContactBlock } from './components/ContactBlock'
 import { MintedMandalas } from './components/MintedMandalas'
 import { Button } from '@/components/ui/button'
 
+import LogDock from '@/components/LogDock'
+
 const getAddress = (id?: number) => (id && CONTRACTS[id]) || undefined
 
 export default function App() {
@@ -177,6 +179,8 @@ export default function App() {
 
         <ContactBlock />
         <Toaster position="bottom-center" richColors />
+        {/* Dev log panel — enabled in dev or with ?debug=1 */}
+        <LogDock enabled={import.meta.env.DEV || /[?&]debug=1/.test(window.location.search)} />
       </main>
     </>
   )
